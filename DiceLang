@@ -1,0 +1,6 @@
+# 学习用Pratt算法解决实际问题.
+def main():
+    pass
+
+if __name__ == "__main__":
+    main()
