@@ -52,7 +52,7 @@ class Token:
 class DiceResult:
     rolls: list[tuple[int, bool]] # [(1, is_chosen=T), (2, is_chosen=F), ...]
 
-class Lexer: # TODO
+class Lexer: # 词法分析器：输入字符串，输出 Token 流。
     def __init__(self, text: str, rng: random.Random | None = None):
         pass
 
@@ -60,8 +60,8 @@ class Parser: # TODO
     def __init__ (self, tokens: list[Token]):
         self.tokens = tokens
         self.pos = 0
-        self.lbp_table = {}
-        self.rbp_table = {}
+        self.lbp_table: dict[TokenType, int] = {...}
+        self.rbp_table: dict[TokenType, int] = {...}
     
 class Evaluator: # TODO
     def __init__(self, text: str, rng: random.Random | None = None):
