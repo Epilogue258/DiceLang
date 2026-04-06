@@ -37,6 +37,46 @@ class TokenType(StrEnum):
 
     EOF = "EOF"
 
+IDENTIFIER_TO_TYPE: dict[str, TokenType] = {
+    'd': TokenType.DICE,
+    'h': TokenType.HIGHEST,
+    'l': TokenType.LOWEST,
+    'k': TokenType.KEEP,
+    't': TokenType.THROW,
+}
+
+SYMBOL_TO_TYPE: dict[str, TokenType] = {
+    # 双字符运算符（注意顺序不重要，但消费时要按最长匹配）
+    '**': TokenType.POW,
+    '==': TokenType.EQ,
+    '!=': TokenType.NEQ,
+    '<=': TokenType.LTE,
+    '>=': TokenType.GTE,
+    # 单字符运算符
+    '+': TokenType.PLUS,
+    '-': TokenType.MINUS,
+    '*': TokenType.MULTIPLY,
+    '/': TokenType.DIVIDE,
+    '%': TokenType.MOD,
+    '^': TokenType.POW,
+    '(': TokenType.LPAREN,
+    ')': TokenType.RPAREN,
+    '<': TokenType.LT,
+    '>': TokenType.GT,
+    '=': TokenType.ASSIGN,
+}
+
+STANDARD_SYMBOL: dict[str, str] = {
+    "**": "^",
+}
+
+LONGEST_SYM_LENGTH = max(len(sym) for sym in SYMBOL_TO_TYPE.keys())
+
+SYMBOLS = frozenset(''.join(SYMBOL_TO_TYPE.keys()))
+
+def standardize_sym(symbol: str) -> str:
+    return (STANDARD_SYMBOL.get(symbol, symbol))
+
 @dataclass(frozen=True)
 class Token:
     type: TokenType
@@ -45,7 +85,7 @@ class Token:
     pos: int
 
 @dataclass
-class DiceResult:
+class DiceResult: # TODO: 可能无需独立存在, 而隶属于EvalResult, 待定
     rolls: list[tuple[int, bool]] # [(1, is_chosen=T), (2, is_chosen=F), ...]
 
 class AstNode:
