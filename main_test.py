@@ -1,6 +1,9 @@
 import pytest
-import main
-from main import Token, TokenType as tktype, AstNode, DiceResult, Lexer
+from tokens import (
+    TokenType as tktype,
+    Token, 
+)
+from lexer import Lexer
 from typing import Any
 import random
 
