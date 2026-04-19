@@ -1,20 +1,23 @@
 # 学习用Pratt算法解决实际问题.
 import random
+
+from lexer import Lexer
+
 # tag
 
 
 def eval_expr(expr: str) -> int:
     return 0
 
+
 def main():
-    random.seed(42) # 固定种子
+    random.seed(42)  # 固定种子
     lexer = Lexer("1D6 if == 1 : 2")
     # 测试Lexer
 
     # 测试Parser
 
     # 测试Evaluator
-
 
     # 基本算术
     # assert eval_expr("3+5") == 8, "加法失败"
@@ -28,9 +31,10 @@ def main():
     # 随机测试
     # random_simple_test()
     # TODO: 骰子计算
-    # 
+    #
     # TODO: 后缀运算
     print("所有测试通过！")
+
 
 if __name__ == "__main__":
     main()
