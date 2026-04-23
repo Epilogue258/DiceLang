@@ -9,22 +9,28 @@ DiceLang AST 节点定义。
 - 解析器按自底向上构建语法树。
 
 说明：
+- 重写了Str用以方便查看输出，如不需要结构化，请调用__repr__()。dataclass会自动递归调用内层元素的__repr__()
 - `DiceNode.selectors` 必须保持源码顺序，因为后缀修饰器语义依赖顺序。
 """
 
 from dataclasses import dataclass
+from tokenize import group
 
 from tokens import TokenType
 
 
 @dataclass(frozen=True, slots=True)
 class AstNode:
-    pass
+    def __str__(self) -> str:
+        return self.__class__.__name__
 
 
 @dataclass(frozen=True, slots=True)
 class NumberNode(AstNode):
     value: int
+
+    def __str__(self) -> str:
+        return str(self.value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,6 +44,9 @@ class DiceNode(AstNode):
     count: AstNode  # 左边的数字（可以是表达式）
     sides: AstNode  # 右边的数字（可以是表达式）
     selectors: list[SelectorNode]  # 有序的选择器链
+
+    def __str__(self) -> str:  # TODO 输出时处理selectors
+        return f"({self.count} D {self.sides})"
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,6 +62,9 @@ class BinaryOpNode(AstNode):
     left: AstNode
     right: AstNode
 
+    def __str__(self) -> str:
+        return f"({self.left} {self.op} {self.right})"
+
 
 @dataclass(frozen=True, slots=True)
 class UnaryOpNode(AstNode):
@@ -64,3 +76,23 @@ class UnaryOpNode(AstNode):
 
     op: TokenType
     operand: AstNode
+
+    def __str__(self) -> str:
+        return f"({self.op}{self.operand})"
+
+
+if __name__ == "__main__":
+    num1 = UnaryOpNode(TokenType.MINUS, NumberNode(11))
+    num2 = NumberNode(22)
+    plus = BinaryOpNode(TokenType.PLUS, num1, num2)
+    print(f"{plus}\n")
+    print(f"{plus!r}\n")
+
+
+@dataclass(frozen=True, slots=True)
+class GroupNode(AstNode):
+    group: list[AstNode]
+
+    def __str__(self) -> str:
+        # return f"{{:{', '.join(map(str, self.group))}:}}"  # TODO: func{LP: 1+2, 3, 4*6 :RP}，之所以采用{: xxx :}形式是为了同常规的括弧作出区分
+        return f"( {', '.join(map(str, self.group))} )"

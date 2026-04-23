@@ -119,7 +119,9 @@ def test_fuzzing_lex():
 def test_lex_happy(text, expects: list[tuple[tktype, Any]]):
     lexer = Lexer(text)
     assert len(lexer.tokens) == len(expects) + 1  # expects少一个EOF
-    for token, (type, value) in zip(lexer.tokens, expects, strict=False):  # EOF会被zip自动截断, 无需处理
+    for token, (type, value) in zip(
+        lexer.tokens, expects, strict=False
+    ):  # EOF会被zip自动截断, 无需处理 TODO 确保zip正确截断，无需调整strict
         assert token.type == type
         assert token.value == value
     else:

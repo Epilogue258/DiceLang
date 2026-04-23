@@ -12,7 +12,6 @@ def eval_expr(expr: str) -> int:
 
 def main():
     random.seed(42)  # 固定种子
-    lexer = Lexer("1D6 if == 1 : 2")
     # 测试Lexer
 
     # 测试Parser
@@ -39,14 +38,13 @@ def main():
 if __name__ == "__main__":
     main()
 
-# TODO:
+# TODO: 完成以下实现
 """
-完成以下实现
 Parser：实现 Pratt 解析，先只处理算术和括号。测试用例：手工构造 token 列表 → 期望 AST。
 
 Evaluator：实现算术求值，返回 EvalResult。测试用例：手工构造 AST → 期望数值和步骤字符串。
 
-集成：在 eval_expr 中串联三者，测试 "2+3" 等。
+跑通集成测试：在 eval_expr 中串联三者，测试 "2+3" 等。
 
 加入骰子：扩展 Lexer 识别 d；Parser 中 d 作为中缀运算符；Evaluator 中实现 Dice 节点求值（带随机数，用依赖注入 rng）。测试用范围测试 + 固定种子。
 
@@ -55,6 +53,5 @@ Evaluator：实现算术求值，返回 EvalResult。测试用例：手工构造
 
 # TODO
 # | 方法              | 作用                                                                                                                       |
-# | `.next()`       | 消费当前 token，并前进到下一个。                                                                                           |
 # | `.junk()`       | 跳过当前 token（或连续跳过多个无效 token），直到找到某个“同步点”（比如遇到分号、右括号、运算符等）。具体行为由实现定义。 |
 # | `.expect(kind)` | 断言下一个 token 是某种类型，如果不是则报告错误，并尝试恢复（比如调用 `.junk()`跳过）。                                  |

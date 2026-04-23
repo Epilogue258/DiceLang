@@ -13,8 +13,10 @@ DiceLang 的词法单元（Token）与词法类型定义。
 - `Token.value` 保存“语义值”（如 NUMBER 的 int 值），`Token.text` 保留原始文本片段。
 """
 
+from ast import Str
 from dataclasses import dataclass
 from enum import StrEnum
+from multiprocessing import Value
 from typing import Any
 
 
@@ -24,16 +26,16 @@ class TokenType(StrEnum):
     """
 
     # 基础运算
-    DICE = "DICE"  # D/d, e.g. 3d6, 2D10
+    DICE = "D"
     NUMBER = "NUMBER"  # 1, 2, 3, ...
-    PLUS = "PLUS"  # +
-    MINUS = "MINUS"  # -
-    MULTIPLY = "MULTIPLY"  # *
-    DIVIDE = "DIVIDE"  # /, 由于跑团需要, 这为地板除法, 如7/2=3
-    MOD = "MOD"  # %
-    POW = "POW"  # 1 ^ 2, or 3d6 ** 5, ^同**通用
-    LPAREN = "LPAREN"  # (
-    RPAREN = "RPAREN"  # )
+    PLUS = "+"
+    MINUS = "-"  # -
+    MULTIPLY = "*"  # *
+    DIVIDE = "/"  # /, 由于跑团需要, 为地板除法, 如7/2=3
+    MOD = "%"
+    POW = "^"  # 1 ^ 2, or 3d6 ** 5, ^同**通用
+    LPAREN = "("
+    RPAREN = ")"
     # 比较运算
     LT = "LT"  # <, 3d6 < (5 < 6)
     GT = "GT"  # >, 3d6 > (5 > 6)
@@ -61,8 +63,8 @@ class TokenType(StrEnum):
 
     EOF = "EOF"
 
-    def __repr__(self):
-        return f"Token({self.type}, {self.value!r})"  # 不显示 pos 和 text
+    def __str__(self) -> str:
+        return self.value
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +82,12 @@ class Token:
     value: Any
     text: str
     pos: int
+
+    def __repr__(self):
+        return f"Token({self.type!r}: {self.value!r}, pos[{self.pos}, text={self.text}])"
+
+    def __str__(self):
+        return str(self.value)
 
 
 @dataclass

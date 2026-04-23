@@ -8,7 +8,7 @@ from tokens import (
 
 class Lexer:  # 词法分析器：输入字符串，输出 Token 流。
     def __init__(self, text: str):
-        self.tokens = self.tokenize(text)
+        self.tokens: list[Token] = self.tokenize(text)
 
     def tokenize(self, text: str) -> list[Token]:
         index = 0
@@ -49,6 +49,12 @@ class Lexer:  # 词法分析器：输入字符串，输出 Token 流。
         tokens.append(Token(TokenType.EOF, None, "", -1))
         return tokens
 
+    def __str__(self):
+        # 令人难堪的是，python的list自动调用的是repr，故而即使print(f"{tokens}")而非{tokens！r}，其结果可能也会令你错愕
+
+        tokens = " ".join(map(str, self.tokens))
+        return f"<Lexer: {tokens}>" if tokens else "<Lexer: empty>"
+
 
 IDENTIFIER_TO_TYPE: dict[str, TokenType] = {
     "d": TokenType.DICE,
@@ -69,6 +75,7 @@ SYMBOL_TO_TYPE: dict[str, TokenType] = {
     "!=": TokenType.NEQ,
     "<=": TokenType.LTE,
     ">=": TokenType.GTE,
+    "//": TokenType.DIVIDE,  # 归一化，我们毕竟不需要小数
     # 单字符运算符
     "+": TokenType.PLUS,
     "-": TokenType.MINUS,
