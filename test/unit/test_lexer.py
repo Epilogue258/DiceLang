@@ -3,8 +3,8 @@ from typing import Any
 
 import pytest
 
-from lexer import Lexer
-from tokens import (
+from src.DiceLang.lexer import Lexer
+from src.DiceLang.tokens import (
     TokenType as tktype,
 )
 

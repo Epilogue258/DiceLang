@@ -1,6 +1,10 @@
+import random
+
 import pytest
 
-from lexer import Lexer
+from src.DiceLang.lexer import Lexer
+
+RNG = random.Random(42)  # 固定随机种子, 以便复现
 
 
 def test_fuzzing_parse():

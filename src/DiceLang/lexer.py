@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from tokens import (
+from .tokens import (
     Token,
     TokenType,
 )

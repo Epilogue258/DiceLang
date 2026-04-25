@@ -13,10 +13,8 @@ DiceLang 的词法单元（Token）与词法类型定义。
 - `Token.value` 保存“语义值”（如 NUMBER 的 int 值），`Token.text` 保留原始文本片段。
 """
 
-from ast import Str
 from dataclasses import dataclass
 from enum import StrEnum
-from multiprocessing import Value
 from typing import Any
 
 

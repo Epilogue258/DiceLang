@@ -1,8 +1,6 @@
-from time import sleep
-from turtle import right
 from typing import Self
 
-from astnode import (
+from .astnode import (
     AstNode,
     BinaryOpNode,
     DiceNode,
@@ -11,8 +9,8 @@ from astnode import (
     SelectorNode,
     UnaryOpNode,
 )  # TODO 确保应导尽导
-from lexer import Lexer  # TODO 测试用，后期删除
-from tokens import Token, TokenType
+from .lexer import Lexer  # TODO 测试用，后期删除
+from .tokens import Token, TokenType
 
 
 class Parser:  # TODO 解析器：输入 Token 流，输出 AST（抽象语法树）。

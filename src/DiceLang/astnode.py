@@ -14,9 +14,8 @@ DiceLang AST 节点定义。
 """
 
 from dataclasses import dataclass
-from tokenize import group
 
-from tokens import TokenType
+from .tokens import TokenType
 
 
 @dataclass(frozen=True, slots=True)
