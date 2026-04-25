@@ -1,5 +1,6 @@
 from collections.abc import Callable
 
+from .error import LexerError
 from .tokens import (
     Token,
     TokenType,
@@ -41,10 +42,10 @@ class Lexer:  # 词法分析器：输入字符串，输出 Token 流。
                 if symbol in SYMBOL_TO_TYPE:
                     tokens.append(Token(SYMBOL_TO_TYPE[symbol], _standardize_symbol(symbol), symbol, index))
                 else:
-                    raise ValueError(f"未知的符号: {symbol} 位于索引{index}到{end_pos}部分")
+                    raise LexerError(f"未知的符号: {symbol} 位于索引{index}到{end_pos}部分")
                 index = end_pos
             else:
-                raise ValueError(f"未知的字符: {ch} 位于索引{index}部分")
+                raise LexerError(f"未知的字符: {ch} 位于索引{index}部分")
         # while index < len(text): ends
         tokens.append(Token(TokenType.EOF, None, "", -1))
         return tokens
