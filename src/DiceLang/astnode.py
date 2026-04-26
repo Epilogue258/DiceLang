@@ -80,23 +80,32 @@ class UnaryOpNode(AstNode):
         return f"({self.op}{self.operand})"
 
 
+@dataclass(frozen=True, slots=True)
+class GroupNode(AstNode):
+    group: AstNode
+
+    def __str__(self) -> str:
+        # return f"{{:{', '.join(map(str, self.group))}:}}"  # 之所以采用{: xxx :}形式是为了同print时自动生成的括弧作出区分
+        return f"( {self.group} )"
+
+
+@dataclass(frozen=True, slots=True)
+class FuncCallNode(AstNode):
+    groups: list[AstNode]
+
+    def __str__(self) -> str:
+        # return f"{{:{', '.join(map(str, self.group))}:}}"  # TODO: 之所以采用{: xxx :}形式是为了同print时自动生成的括弧作出区分
+        return f"( {', '.join(map(str, self.groups))} )"
+
+
+@dataclass
+class DiceResult:  # TODO: 可能无需独立存在, 而隶属于EvalResult, 待定
+    rolls: list[tuple[int, bool]]  # [(1, is_chosen=T), (2, is_chosen=F), ...]
+
+
 if __name__ == "__main__":
     num1 = UnaryOpNode(TokenType.MINUS, NumberNode(11))
     num2 = NumberNode(22)
     plus = BinaryOpNode(TokenType.PLUS, num1, num2)
     print(f"{plus}\n")
     print(f"{plus!r}\n")
-
-
-@dataclass(frozen=True, slots=True)
-class GroupNode(AstNode):
-    group: list[AstNode]
-
-    def __str__(self) -> str:
-        # return f"{{:{', '.join(map(str, self.group))}:}}"  # TODO: func{LP: 1+2, 3, 4*6 :RP}，之所以采用{: xxx :}形式是为了同常规的括弧作出区分
-        return f"( {', '.join(map(str, self.group))} )"
-
-
-@dataclass
-class DiceResult:  # TODO: 可能无需独立存在, 而隶属于EvalResult, 待定
-    rolls: list[tuple[int, bool]]  # [(1, is_chosen=T), (2, is_chosen=F), ...]

@@ -3,6 +3,7 @@ from typing import Any
 
 import pytest
 
+from src.DiceLang.error import TodoError
 from src.DiceLang.lexer import Lexer
 from src.DiceLang.tokens import (
     TokenType as tktype,
@@ -17,7 +18,7 @@ def test_fuzzing_lex():
     模糊测试：随机生成100个合法的骰子表达式字符串
     验证 Lexer 能正常解析，不抛出 ValueError/语法错误
     """
-    pass
+    raise TodoError("test_fuzzing_lex")
 
 
 # 固定case的happy测试

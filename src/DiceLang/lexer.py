@@ -50,11 +50,14 @@ class Lexer:  # 词法分析器：输入字符串，输出 Token 流。
         tokens.append(Token(TokenType.EOF, None, "", -1))
         return tokens
 
-    def __str__(self):
+    def __str__(self) -> str:
         # 令人难堪的是，python的list自动调用的是repr，故而即使print(f"{tokens}")而非{tokens！r}，其结果可能也会令你错愕
 
         tokens = " ".join(map(str, self.tokens))
         return f"<Lexer: {tokens}>" if tokens else "<Lexer: empty>"
+
+    def __repr__(self) -> str:
+        return f"<Lexer: {self.tokens}>" if self.tokens else "<Lexer: empty>"
 
 
 IDENTIFIER_TO_TYPE: dict[str, TokenType] = {

@@ -69,3 +69,10 @@ class EvaluatorError(DiceLangError):
         if self.ast_tree is not None:
             info["AST树"] = repr(self.ast_tree)  # TODO ASTnode层数过深？
         return info
+
+
+class TodoError(DiceLangError):
+    def __init__(self, message: str = ""):
+        if not message:
+            message = "这是条TODO错误，理论上在上线时项目内不应有任何除此以外的引用。"
+        super().__init__(message)
