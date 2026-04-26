@@ -86,8 +86,3 @@ class Token:
 
     def __str__(self):
         return str(self.value)
-
-
-@dataclass
-class DiceResult:  # TODO: 可能无需独立存在, 而隶属于EvalResult, 待定
-    rolls: list[tuple[int, bool]]  # [(1, is_chosen=T), (2, is_chosen=F), ...]

@@ -15,7 +15,7 @@ DiceLang AST 节点定义。
 
 from dataclasses import dataclass
 
-from .tokens import TokenType
+from tokens import TokenType
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,3 +95,8 @@ class GroupNode(AstNode):
     def __str__(self) -> str:
         # return f"{{:{', '.join(map(str, self.group))}:}}"  # TODO: func{LP: 1+2, 3, 4*6 :RP}，之所以采用{: xxx :}形式是为了同常规的括弧作出区分
         return f"( {', '.join(map(str, self.group))} )"
+
+
+@dataclass
+class DiceResult:  # TODO: 可能无需独立存在, 而隶属于EvalResult, 待定
+    rolls: list[tuple[int, bool]]  # [(1, is_chosen=T), (2, is_chosen=F), ...]

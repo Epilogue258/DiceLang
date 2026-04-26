@@ -1,5 +1,5 @@
-from .astnode import AstNode
-from .tokens import Token
+from astnode import AstNode
+from tokens import Token
 
 
 class DiceLangError(Exception):

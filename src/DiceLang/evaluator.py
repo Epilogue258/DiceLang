@@ -1,5 +1,8 @@
 import random
 
+import astnode
+from astnode import AstNode, DiceResult
+
 
 class Evaluator:  # 求值器：输入 AST，输出结果（包含中间过程）。
     def __init__(self, rng: random.Random | None = None):
