@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
-from .error import LexerError
-from .tokens import (
+from error import LexerError
+from tokens import (
     Token,
     TokenType,
 )

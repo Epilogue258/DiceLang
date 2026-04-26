@@ -1,6 +1,6 @@
 from typing import Self
 
-from .astnode import (
+from astnode import (
     AstNode,
     BinaryOpNode,
     DiceNode,
@@ -9,9 +9,9 @@ from .astnode import (
     SelectorNode,
     UnaryOpNode,
 )  # TODO 确保应导尽导
-from .error import ParserError
-from .lexer import Lexer  # TODO 测试用，后期删除
-from .tokens import Token, TokenType
+from error import ParserError
+from lexer import Lexer  # TODO 测试用，后期删除
+from tokens import Token, TokenType
 
 
 class Parser:  # TODO 解析器：输入 Token 流，输出 AST（抽象语法树）。
@@ -159,6 +159,6 @@ if __name__ == "__main__":  # TODO 测试用
 
     # assert eval(sounce) == eval(str(parser.ast))
 # 测试结果：
-# 括号不对称出错
+# 括号不对称出错：(()会提示括号不匹配，但是())则不会。
 # (1+2)*（3*4）
 # TODO 测试逗号
