@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
-from error import LexerError
-from tokens import (
+from .error import LexerError
+from .tokens import (
     Token,
     TokenType,
 )
@@ -94,6 +94,7 @@ SYMBOL_TO_TYPE: dict[str, TokenType] = {
     "=": TokenType.ASSIGN,
     "!": TokenType.EXPLODE,  # 爆炸骰
     ":": TokenType.COLON,
+    ",": TokenType.COMMA,
 }
 
 STANDARD_SYMBOLS: dict[str, str] = {

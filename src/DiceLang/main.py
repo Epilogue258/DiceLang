@@ -1,7 +1,7 @@
 # 学习用Pratt算法解决实际问题.
 import random
 
-from lexer import Lexer
+from .lexer import Lexer
 
 # tag
 

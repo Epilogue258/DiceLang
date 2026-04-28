@@ -5,7 +5,15 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Current File",
+            "name": "Python: Current Module",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "DiceLang.${fileBasenameNoExtension}",
+            "cwd": "${workspaceFolder}/src",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Current File (direct)",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",

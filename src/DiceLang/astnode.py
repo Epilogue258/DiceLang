@@ -15,7 +15,7 @@ DiceLang AST 节点定义。
 
 from dataclasses import dataclass
 
-from tokens import TokenType
+from .tokens import TokenType
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,20 +82,20 @@ class UnaryOpNode(AstNode):
 
 @dataclass(frozen=True, slots=True)
 class GroupNode(AstNode):
-    group: AstNode
+    group: list[AstNode]
 
     def __str__(self) -> str:
-        # return f"{{:{', '.join(map(str, self.group))}:}}"  # 之所以采用{: xxx :}形式是为了同print时自动生成的括弧作出区分
-        return f"( {self.group} )"
+        return f"{{:{', '.join(map(str, self.group))}:}}"  # 之所以采用{: xxx :}形式是为了同print时自动生成的括弧作出区分
+        # return f"( {self.group} )"
 
 
 @dataclass(frozen=True, slots=True)
 class FuncCallNode(AstNode):
-    groups: list[AstNode]
+    args: GroupNode
 
     def __str__(self) -> str:
-        # return f"{{:{', '.join(map(str, self.group))}:}}"  # TODO: 之所以采用{: xxx :}形式是为了同print时自动生成的括弧作出区分
-        return f"( {', '.join(map(str, self.groups))} )"
+        return f"{self.args}"
+        # return f"( {', '.join(map(str, self.args))} )"
 
 
 @dataclass

@@ -1,8 +1,8 @@
 import random
 
-import astnode
-from astnode import AstNode, DiceResult
-from error import EvaluatorError, TodoError
+from . import astnode
+from .astnode import AstNode, DiceResult
+from .error import EvaluatorError, TodoError
 
 
 class Evaluator:  # 求值器：输入 AST，输出结果（包含中间过程）。
