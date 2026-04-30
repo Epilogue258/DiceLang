@@ -8,6 +8,9 @@ dependencies = [
     "pytest>=9.0.3",
 ]
 
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
 exclude = [

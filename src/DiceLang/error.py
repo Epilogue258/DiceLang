@@ -1,20 +1,19 @@
 from .astnode import AstNode
 from .tokens import Token
 
-# TODO: **kwargs
-
 
 class DiceLangError(Exception):
     """DiceLang 相关错误的基类。"""
 
     def __init__(self, message: str = "", **kwargs):
         super().__init__(message)
+        self._extra: dict[str, object] = kwargs
 
     def _extra_info(self) -> dict[str, str]:
-        return {}
+        return {k: repr(v) for k, v in self._extra.items() if v is not None}
 
     def __str__(self) -> str:
-        msg = super().__str__() or self.__class__.__name__  # 短路
+        msg = super().__str__() or self.__class__.__name__
         info = self._extra_info()
         if not info:
             return msg
@@ -28,15 +27,7 @@ class LexerError(DiceLangError):
     def __init__(self, message, text=None, pos=None, **kwargs):
         self.text = text
         self.pos = pos
-        super().__init__(message)
-
-    def _extra_info(self):
-        info = {}
-        if self.pos is not None:
-            info["位置"] = str(self.pos)
-        if self.text is not None:
-            info["文本"] = repr(self.text)
-        return info
+        super().__init__(message, text=text, pos=pos, **kwargs)
 
 
 class ParserError(DiceLangError):
@@ -46,17 +37,7 @@ class ParserError(DiceLangError):
         self.token = token
         self.pos = pos
         self.tokens = tokens
-        super().__init__(message)
-
-    def _extra_info(self):
-        info = {}
-        if self.pos is not None:
-            info["位置"] = str(self.pos)
-        if self.token is not None:
-            info["Token"] = repr(self.token)
-        if self.tokens is not None:
-            info["Token列表"] = repr(self.tokens)
-        return info
+        super().__init__(message, token=token, pos=pos, tokens=tokens, **kwargs)
 
 
 class EvaluatorError(DiceLangError):
@@ -64,17 +45,11 @@ class EvaluatorError(DiceLangError):
 
     def __init__(self, message: str = "", ast_tree: AstNode | None = None, **kwargs):
         self.ast_tree = ast_tree
-        super().__init__(message)
-
-    def _extra_info(self):
-        info = {}
-        if self.ast_tree is not None:
-            info["AST树"] = repr(self.ast_tree)  # TODO ASTnode层数过深？
-        return info
+        super().__init__(message, ast_tree=ast_tree, **kwargs)
 
 
 class TodoError(DiceLangError):
     def __init__(self, message: str = "", **kwargs):
         if not message:
             message = "这是条TODO错误，理论上在上线时项目内不应有任何除此以外的引用。"
-        super().__init__(message)
+        super().__init__(message, **kwargs)

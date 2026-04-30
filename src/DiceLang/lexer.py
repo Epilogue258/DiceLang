@@ -47,7 +47,7 @@ class Lexer:  # 词法分析器：输入字符串，输出 Token 流。
             else:
                 raise LexerError(f"未知的字符: {ch} 位于索引{index}部分")
         # while index < len(text): ends
-        tokens.append(Token(TokenType.EOF, None, "", -1))
+        tokens.append(Token(TokenType.EOF, None, "EOF: 抵达文件末尾", -1))
         return tokens
 
     def __str__(self) -> str:

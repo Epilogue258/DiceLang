@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(jj show *)"
+      "Bash(jj show *)",
+      "Bash(python -m DiceLang.parser)",
+      "Bash(PYTHONIOENCODING=utf-8 python -m pytest test/unit/test_parser.py -v -s)"
     ]
   }
 }

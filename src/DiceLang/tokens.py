@@ -85,4 +85,4 @@ class Token:
         return f"Token({self.type!r}: {self.value!r}, pos[{self.pos}, text={self.text}])"
 
     def __str__(self):
-        return str(self.value)
+        return str(self.text)

@@ -3,9 +3,9 @@ from typing import Any
 
 import pytest
 
-from src.DiceLang.error import TodoError
-from src.DiceLang.lexer import Lexer
-from src.DiceLang.tokens import (
+from DiceLang.error import TodoError
+from DiceLang.lexer import Lexer
+from DiceLang.tokens import (
     Token,
 )
 
