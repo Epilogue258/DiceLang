@@ -3,25 +3,57 @@ from typing import Any
 
 import pytest
 
-from src.DiceLang.error import TodoError
-from src.DiceLang.lexer import Lexer
-from src.DiceLang.tokens import (
+from DiceLang.astnode import AstNode
+from DiceLang.error import DiceLangError, LexerError, TodoError
+from DiceLang.lexer import Lexer
+from DiceLang.tokens import (
     TokenType as tktype,
 )
 
 RNG = random.Random(42)  # 固定随机种子, 以便复现
 
 
-# fuzzing test
+# --- 辅助函数 ---
+class _Color:
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    BOLD = "\033[1m"
+    RESET = "\033[0m"
+
+
+def lex_or_error(text: str) -> Lexer | DiceLangError:
+    """词法分析并捕获错误，总是返回结果供测试打印。"""
+    try:
+        return Lexer(text)
+    except DiceLangError as e:
+        return e
+
+
+def _log(source: str, result: Lexer | DiceLangError) -> None:
+    is_err = isinstance(result, DiceLangError)
+    tag = f"{_Color.RED}{_Color.BOLD}Error{_Color.RESET}" if is_err else f"{_Color.GREEN}OK{_Color.RESET}"
+    raw = f"{_Color.YELLOW}{result}{_Color.RESET}" if is_err else str(result)
+    indented = raw.replace("\n", "\n  ")
+    print(f"\n  case={source!r}  [{tag}]\n  {indented}")
+
+
+# ============================================================
+# Fuzzing 占位
+# ============================================================
+
+
+@pytest.mark.xfail(reason="待实现", strict=True)
 def test_fuzzing_lex():
-    """
-    模糊测试：随机生成100个合法的骰子表达式字符串
-    验证 Lexer 能正常解析，不抛出 ValueError/语法错误
-    """
+    """模糊测试：随机生成合法的骰子表达式字符串，验证 Lexer 能正常解析。"""
     raise TodoError("test_fuzzing_lex")
 
 
-# 固定case的happy测试
+# ============================================================
+# 正常用例
+# ============================================================
+
+
 @pytest.mark.parametrize(
     "text, expects",
     [
@@ -93,7 +125,7 @@ def test_fuzzing_lex():
         ),
         (
             "1--2",
-            [  # 连续减号（可能用于表示负数？词法阶段应输出两个 MINUS）
+            [  # 连续减号: 词法阶段应输出两个 MINUS
                 (tktype.NUMBER, 1),
                 (tktype.MINUS, "-"),
                 (tktype.MINUS, "-"),
@@ -118,24 +150,29 @@ def test_fuzzing_lex():
     ],
 )
 def test_lex_happy(text, expects: list[tuple[tktype, Any]]):
-    lexer = Lexer(text)
-    assert len(lexer.tokens) == len(expects) + 1  # expects少一个EOF
-    for token, (type, value) in zip(
-        lexer.tokens, expects, strict=False
-    ):  # EOF会被zip自动截断, 无需处理 TODO 确保zip正确截断，无需调整strict
+    result = lex_or_error(text)
+    _log(text, result)
+    assert isinstance(result, Lexer), f"期望 Lexer，得到 {type(result).__name__}: {result}"
+    tokens = result.tokens
+    assert len(tokens) == len(expects) + 1  # expects少一个EOF
+    for token, (type, value) in zip(tokens, expects, strict=False):
         assert token.type == type
         assert token.value == value
-    else:
-        assert lexer.tokens[-1].type == tktype.EOF
+    assert tokens[-1].type == tktype.EOF
 
 
-# 固定样本的错误样例测试
+# ============================================================
+# 错误样例
+# ============================================================
+
+
 @pytest.mark.parametrize(
     "bad_text",
     [
-        ("1@6**2"),
+        "1@6**2",
     ],
 )
-def test_inva_invalid(bad_text):
-    with pytest.raises(ValueError):
-        Lexer(bad_text)
+def test_lex_invalid(bad_text):
+    result = lex_or_error(bad_text)
+    _log(bad_text, result)
+    assert isinstance(result, LexerError), f"期望 LexerError，得到 {type(result).__name__}: {result}"
