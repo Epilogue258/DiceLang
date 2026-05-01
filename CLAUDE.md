@@ -12,6 +12,19 @@ uv run pytest -x             # 遇到失败即停
 
 项目使用 `uv` 管理依赖，Python 3.13.5，测试框架 pytest。
 
+## 版本控制
+
+项目使用 **JujuStu（jj）** 进行版本控制，而非传统 Git。
+
+**重要约定**：有代码改动时，必须确认 `jj log` 的变更内容是否合理：
+
+- 合理：描述清晰、改动范围正确
+- 不合理：使用 `jj new` 或 `jj commit` 手动推进变更后再调整
+
+**多功能改动**：如果改动同时涉及多项功能，可以手动添加描述，对新添加的修改进行 `squash` 或 `split`。
+
+**历史变更**：已有的修改（非本次对话新增），就算不合理也放过，不做处理。
+
 ## 架构
 
 经典三阶段管线：**Lexer → Parser → Evaluator**
@@ -24,7 +37,8 @@ uv run pytest -x             # 遇到失败即停
 
 - `tokens.py` — Token & TokenType 定义（21 种 token）
 - `lexer.py` — 词法分析器，支持最长匹配、大小写无关关键字、`**`/`^` 归一化
-- `astnode.py` — AST 节点定义（frozen dataclass），含 `DiceResult` 求值结果类型
+- `astnode.py` — AST 节点定义（frozen dataclass）
+- `result.py` — 求值结果类型（`EvalResult`）
 - `parser.py` — Pratt parser，前缀/中缀绑定力表驱动
 - `evaluator.py` — 求值器（当前为骨架，仅 raise TodoError）
 - `error.py` — 错误层级：`DiceLangError → LexerError / ParserError / TodoError`
@@ -40,7 +54,6 @@ uv run pytest -x             # 遇到失败即停
 | `SelectorNode(selector, count)` | 后缀选择器（h/l/k/t） |
 | `GroupNode(group: list[AstNode])` | 括号分组 / 参数列表 |
 | `FuncCallNode(args: GroupNode)` | 函数调用 |
-| `DiceResult(rolls: list[tuple[int, bool]])` | 掷骰结果（值, 是否被标记） |
 
 ### Parser 优先级（绑定力，越高越紧密）
 
@@ -86,4 +99,4 @@ uv run pytest -x             # 遇到失败即停
 
 - 数据类一律 `@dataclass(frozen=True, slots=True)`，Token 和 AST 节点不可变
 - 注释和文档使用中文
-- 错误类型继承自 `DiceLangError`，按组件分 `LexerError` / `ParserError`
+- 错误类型继承自 `DiceLangError`，按组件分 `LexerError` / `ParserError` / `EvaluatorError`

@@ -239,5 +239,6 @@ def test_unimplemented_features(source):
 # ============================================================
 
 
+@pytest.mark.xfail(reason="待实现", strict=True)
 def test_fuzzing_parse():
     raise TodoError("test_fuzzing_parse")

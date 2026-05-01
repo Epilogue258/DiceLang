@@ -40,8 +40,6 @@ if __name__ == "__main__":
 
 # TODO: 完成以下实现
 """
-Parser：实现 Pratt 解析，先只处理算术和括号。测试用例：手工构造 token 列表 → 期望 AST。
-
 Evaluator：实现算术求值，返回 EvalResult。测试用例：手工构造 AST → 期望数值和步骤字符串。
 
 跑通集成测试：在 eval_expr 中串联三者，测试 "2+3" 等。

@@ -98,11 +98,6 @@ class FuncCallNode(AstNode):
         # return f"( {', '.join(map(str, self.args))} )"
 
 
-@dataclass
-class DiceResult:  # TODO: 可能无需独立存在, 而隶属于EvalResult, 待定
-    rolls: list[tuple[int, bool]]  # [(1, is_chosen=T), (2, is_chosen=F), ...]
-
-
 if __name__ == "__main__":
     num1 = UnaryOpNode(TokenType.MINUS, NumberNode(11))
     num2 = NumberNode(22)

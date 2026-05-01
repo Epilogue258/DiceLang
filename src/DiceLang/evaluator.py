@@ -1,8 +1,8 @@
 import random
 
-from . import astnode
-from .astnode import AstNode, DiceResult
+from .astnode import AstNode
 from .error import EvaluatorError, TodoError
+from .result import EvalResult
 
 
 class Evaluator:  # 求值器：输入 AST，输出结果（包含中间过程）。
@@ -10,5 +10,5 @@ class Evaluator:  # 求值器：输入 AST，输出结果（包含中间过程�
         self.rng = rng or random.Random()
         raise TodoError("Evaluator初始化")
 
-    def eval(self, node: AstNode) -> DiceResult:  # TODO type hint在这里标红, 这不是错误, 只是因为之后再实现这里的pass
+    def eval(self, node: AstNode) -> EvalResult:
         raise TodoError("Evaluator进行求值")
