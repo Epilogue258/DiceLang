@@ -45,10 +45,10 @@ def test_arithmetic_complex():
     """测试算术表达式 (1+1+1)*(1+1)+(1+1) = 8"""
     # 构建表达式: (1+1+1)*(1+1)+(1+1)
     num1 = NumberNode(1)
-    plus1_1 = BinaryOpNode(tktype.PLUS, num1, num1)          # 1+1 = 2
-    plus1_1_1 = BinaryOpNode(tktype.PLUS, plus1_1, num1)     # (1+1)+1 = 3
-    mult = BinaryOpNode(tktype.MULTIPLY, plus1_1_1, plus1_1) # 3*2 = 6
-    expr = BinaryOpNode(tktype.PLUS, mult, plus1_1)          # 6+2 = 8
+    plus1_1 = BinaryOpNode(tktype.PLUS, num1, num1)  # 1+1 = 2
+    plus1_1_1 = BinaryOpNode(tktype.PLUS, plus1_1, num1)  # (1+1)+1 = 3
+    mult = BinaryOpNode(tktype.MULTIPLY, plus1_1_1, plus1_1)  # 3*2 = 6
+    expr = BinaryOpNode(tktype.PLUS, mult, plus1_1)  # 6+2 = 8
 
     result = eval_or_error(expr)
     _log("(1+1+1)*(1+1)+(1+1)", result)
