@@ -7,13 +7,30 @@
 该文件的作用是记录 agent 在本项目中可能会遇到的常见错误和易混淆之处。
 如果你在项目中遇到任何让你感到意外的情况，请及时告知与你协作的开发者，并在该文件中注明这一情况，以避免今后的 agent 重复踩坑。
 
-## 构建 & 测试
+## 工作流程
 
-```bash
-uv run pytest test/          # 运行全部测试
-uv run pytest test/unit/     # 仅单元测试
-uv run pytest -x             # 遇到失败即停
-``` 
+每次修改代码前，**必须**按以下流程操作：
+
+1. **改前检查版本控制** - 动手前先检查 `jj log`，决定是否需要创建新变更
+   ```bash
+   jj log                        # 查看当前变更
+   jj new                        # 如有现有变更，创建新变更
+   # 或使用 branch 管理复杂改动
+   ```
+
+2. **改代码**
+
+3. **运行测试** - 根据改动范围选择合适的测试
+   ```bash
+   uv run pytest test/unit/test_parser.py     # 只改了 parser
+   uv run pytest test/unit/                   # 改了多个核心组件
+   uv run pytest test/                        # 改动影响全局
+   ```
+
+4. **添加/更新变更描述** - 确保 `jj log` 的变更描述清晰准确
+   ```bash
+   jj describe -m "描述内容"     # 更新变更描述
+   ```
 
 项目使用 `uv` 管理依赖，Python 3.13.5，测试框架 pytest。
 

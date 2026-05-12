@@ -200,7 +200,7 @@ infix_parselets: dict[TokenType, tuple[int, int]] = {
 if __name__ == "__main__":  # TODO 测试用
     from .lexer import Lexer
 
-    sounce = "(1d6)"
+    sounce = "1+2*2**5d6-4*(3+5)"
     lexer = Lexer(sounce)
 
     print(f"\n{lexer!r}\n")

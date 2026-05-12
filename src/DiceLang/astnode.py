@@ -45,7 +45,7 @@ class DiceNode(AstNode):
     selectors: list[SelectorNode]  # 有序的选择器链
 
     def __str__(self) -> str:  # TODO 输出时处理selectors
-        return f"({self.count} D {self.sides})"
+        return f"{self.count}D{self.sides}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,7 +62,7 @@ class BinaryOpNode(AstNode):
     right: AstNode
 
     def __str__(self) -> str:
-        return f"({self.left} {self.op} {self.right})"
+        return f"{self.left} {self.op} {self.right}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,7 +77,7 @@ class UnaryOpNode(AstNode):
     operand: AstNode
 
     def __str__(self) -> str:
-        return f"({self.op}{self.operand})"
+        return f"{self.op}{self.operand}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,8 +85,7 @@ class GroupNode(AstNode):
     group: list[AstNode]
 
     def __str__(self) -> str:
-        return f"{{:{', '.join(map(str, self.group))}:}}"  # 之所以采用{: xxx :}形式是为了同print时自动生成的括弧作出区分
-        # return f"( {self.group} )"
+        return f"({', '.join(map(str, self.group))})"
 
 
 @dataclass(frozen=True, slots=True)
