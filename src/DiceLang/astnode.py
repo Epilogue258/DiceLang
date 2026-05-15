@@ -80,7 +80,8 @@ class UnaryOpNode(AstNode):
         return f"{self.op}{self.operand}"
 
 
-@dataclass(frozen=True, slots=True)
+# frozen会自动生成hash, 不过放宽心, 会自动报错的啦: TypeError: unhashable type: 'list'
+@dataclass(frozen=True, slots=True, unsafe_hash=False)
 class GroupNode(AstNode):
     group: list[AstNode]
 
