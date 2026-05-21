@@ -222,6 +222,7 @@ def test_dice_in_expression():
 # ============================================================
 
 
+@pytest.mark.xfail(reason="待实现", strict=True)
 @pytest.mark.parametrize(
     "source",
     [

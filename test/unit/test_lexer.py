@@ -152,11 +152,11 @@ def test_fuzzing_lex():
 def test_lex_happy(text, expects: list[tuple[tktype, Any]]):
     result = lex_or_error(text)
     _log(text, result)
-    assert isinstance(result, Lexer), f"期望 Lexer，得到 {type(result).__name__}: {result}"
+    assert isinstance(result, Lexer), f"期望 Lexer, 得到 {type(result).__name__}: {result}"
     tokens = result.tokens
     assert len(tokens) == len(expects) + 1  # expects少一个EOF
-    for token, (type, value) in zip(tokens, expects, strict=False):
-        assert token.type == type
+    for token, (token_type, value) in zip(tokens, expects, strict=False):
+        assert token.type == token_type
         assert token.value == value
     assert tokens[-1].type == tktype.EOF
 
