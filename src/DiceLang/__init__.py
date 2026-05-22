@@ -4,7 +4,6 @@
 from .evaluator import Evaluator
 from .lexer import Lexer
 from .parser import Parser
-from .result import EvalResult
 from .tokens import Token, TokenType
 
 __version__ = "0.1.0"

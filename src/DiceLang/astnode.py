@@ -161,6 +161,17 @@ class GroupNode(AstNode):
     def __iter__(self):
         yield from self.group
 
+    @property
+    def family(self) -> Family:
+        res = Family.ALL
+        for atom in self.group:
+            res &= atom.family
+        return res if res == Family.ALL else Family.NONE
+
+    @staticmethod
+    def reconstruct(node: AstNode, attrs: list) -> AstNode:
+        return GroupNode(group=attrs)  # 直接重建
+
     def __str__(self) -> str:
         return f"({', '.join(map(str, self.group))})"
 
