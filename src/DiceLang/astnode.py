@@ -9,7 +9,6 @@ DiceLang AST 节点定义。
 - 解析器按自底向上构建语法树。
 
 说明：
-- 重写了Str用以方便查看输出，如不需要结构化，请调用__repr__()。dataclass会自动递归调用内层元素的__repr__()
 - `DiceNode.selectors` 必须保持源码顺序，因为后缀修饰器语义依赖顺序。
 """
 
@@ -37,8 +36,9 @@ class Family(enum.Flag):  # 底层就是位掩码啦
 # 虽然目前没有这个问题, 但是在一次中间迭代中出现了这个现象, 导致了非常恼人的错误, 尽管后来发现这个迭代事实上是不必要的, 但仍然保留了kw_only
 # 多说无益, 强制所有参数必须以关键字传入就完全避免了这个问题, 如果不理解自己试试不这么做会如何吧
 @dataclass(frozen=True, slots=True, kw_only=True)
-class AstNode:  # TODO 可能要把family改为set
+class AstNode:
     def __str__(self) -> str:
+        """子类重载为用于人类可读的简洁输出；如需结构化表示，请使用 repr。"""
         return self.__class__.__name__
 
     def __iter__(self):
@@ -47,8 +47,19 @@ class AstNode:  # TODO 可能要把family改为set
             yield getattr(self, field.name)
 
     @property
+    def children(self) -> list[AstNode]:
+        """返回所有子节点，供求值器使用。"""
+        return [child for child in self if isinstance(child, AstNode)]
+
+    @property
     def family(self) -> Family:
         return Family.NONE
+
+    @staticmethod
+    def reconstruct(node: AstNode, attrs: list) -> AstNode:
+        """用属性列表重建同类型节点（兼容 kw_only）"""
+        field_names = [f.name for f in fields(node)]
+        return type(node)(**dict(zip(field_names, attrs, strict=True)))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -71,9 +82,13 @@ class SelectorNode(AstNode):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class DiceNode(AstNode):
-    count: AstNode  # 左边的数字（可以是表达式）
-    sides: AstNode  # 右边的数字（可以是表达式）
+    count: AstNode
+    sides: AstNode
     selectors: list[SelectorNode]  # 有序的选择器链
+
+    @property
+    def family(self) -> Family:
+        return Family.DICE
 
     def __str__(self) -> str:  # TODO 输出时处理selectors
         return f"{self.count}D{self.sides}"
@@ -94,14 +109,15 @@ class BinaryOpNode(AstNode):
 
     @property
     def family(self) -> Family:
-        if self.op in (TokenType.PLUS, TokenType.MINUS):
-            return Family.ADD
-        elif self.op in (TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MOD):
-            return Family.MUL
-        elif self.op in (TokenType.POW,):
-            return Family.POW
-        else:
-            raise ValueError(f"不支持的运算符: {self.op}")  # 正常来说这不应该被触发, 是不是漏了运算符啦?
+        match self.op:
+            case TokenType.PLUS | TokenType.MINUS:
+                return Family.ADD
+            case TokenType.MULTIPLY | TokenType.DIVIDE | TokenType.MOD:
+                return Family.MUL
+            case TokenType.POW:
+                return Family.POW
+            case _:
+                return Family.NONE  # 正常来说这不应该被触发, 是不是漏了运算符啦?
 
     def __str__(self) -> str:
         return f"{self.left} {self.op} {self.right}"
