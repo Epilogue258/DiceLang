@@ -95,6 +95,21 @@ class DiceNode(AstNode):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class DiceResNode(AstNode):
+    rolls: list[int]
+    selectors: list[SelectorNode]
+
+    @property
+    def family(self) -> Family:
+        if self.selectors:
+            return Family.DICE
+        return Family.ALL
+
+    def __str__(self) -> str:
+        return f"[{', '.join(map(str, self.rolls))}]"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class BinaryOpNode(AstNode):
     """
     二元运算符节点

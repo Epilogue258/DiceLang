@@ -1,5 +1,5 @@
 # DiceLang/__init__.py
-
+# TODO 重写Lexer, Parser, 使其无状态
 # TODO 从子模块里把最常用的类引进来
 from .evaluator import Evaluator
 from .lexer import Lexer

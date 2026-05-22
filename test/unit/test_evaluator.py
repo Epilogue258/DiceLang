@@ -1,4 +1,5 @@
 import random
+from collections.abc import Generator
 
 import pytest
 
@@ -20,7 +21,7 @@ class _Color:
     RESET = "\033[0m"
 
 
-def eval_or_error(node: AstNode) -> EvalResult | DiceLangError:
+def eval_or_error(node: AstNode) -> Generator[AstNode] | DiceLangError:
     """求值并捕获错误，总是返回结果供测试打印。"""
     try:
         return Evaluator(rng=RNG).eval(node)
@@ -28,7 +29,7 @@ def eval_or_error(node: AstNode) -> EvalResult | DiceLangError:
         return e
 
 
-def _log(desc: str, result: EvalResult | DiceLangError) -> None:
+def _log(desc: str, result: Generator[AstNode] | DiceLangError) -> None:
     is_err = isinstance(result, DiceLangError)
     tag = f"{_Color.RED}{_Color.BOLD}Error{_Color.RESET}" if is_err else f"{_Color.GREEN}OK{_Color.RESET}"
     raw = f"{_Color.YELLOW}{result}{_Color.RESET}" if is_err else str(result)

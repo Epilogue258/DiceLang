@@ -191,7 +191,6 @@ infix_parselets: dict[TokenType, tuple[int, int]] = {
     TokenType.MOD: (20, 21),
     TokenType.POW: (31, 30),  # 右结合幂运算 2^3^4 -> 2^(3^4)
     TokenType.DICE: (60, 61),  # 骰子是左结合的 2d6d8 -> (2d6)d8
-    # TokenType.LPAREN: (0, 0),
     TokenType.RPAREN: (0, 0),
     TokenType.COMMA: (0, 0),
     TokenType.EOF: (-1, -1),
