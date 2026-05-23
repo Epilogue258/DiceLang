@@ -8,8 +8,16 @@ from .tokens import (
 
 
 class Lexer:  # 词法分析器：输入字符串，输出 Token 流。
-    def __init__(self, text: str):
-        self.tokens: list[Token] = self.tokenize(text)
+    def __init__(self, text: str | None = None):
+        self.tokens: list[Token] = []
+        if text is not None:
+            self.tokens = self.tokenize(text)
+
+    def append(self, text: str):
+        self.tokens.extend(self.tokenize(text))
+
+    def replace(self, text: str):
+        self.tokens = self.tokenize(text)
 
     def tokenize(self, text: str) -> list[Token]:
         index = 0
@@ -88,15 +96,21 @@ SYMBOL_TO_TYPE: dict[str, TokenType] = {
     ")": TokenType.RPAREN,
     "<": TokenType.LT,
     ">": TokenType.GT,
-    "=": TokenType.ASSIGN,
+    "=": TokenType.EQ,
+    "&": TokenType.ASSIGN,
     "!": TokenType.EXPLODE,  # 爆炸骰
     ":": TokenType.COLON,
     ",": TokenType.COMMA,
+    "，": TokenType.COMMA,
+    ";": TokenType.SEMICOLON,
+    "；": TokenType.SEMICOLON,
 }
 
 STANDARD_SYMBOLS: dict[str, str] = {
     "**": "^",
     "e": "!",
+    "；": ";",
+    "，": ",",
 }
 
 LONGEST_SYMBOL_LENGTH = max(len(sym) for sym in SYMBOL_TO_TYPE)  # 有趣的是，python直接取用默认获取的是key而无需解包

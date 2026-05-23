@@ -110,9 +110,9 @@ def test_fuzzing_lex():
             "< = > =",
             [  # 分开写的运算符
                 (tktype.LT, "<"),
-                (tktype.ASSIGN, "="),
+                (tktype.EQ, "="),
                 (tktype.GT, ">"),
-                (tktype.ASSIGN, "="),
+                (tktype.EQ, "="),
             ],
         ),
         (
@@ -147,6 +147,9 @@ def test_fuzzing_lex():
                 (tktype.NUMBER, 2),
             ],
         ),
+        ("1;2；3", [(tktype.NUMBER, 1), (tktype.SEMICOLON, ";"), (tktype.NUMBER, 2), (tktype.SEMICOLON, ";"), (tktype.NUMBER, 3)]),
+        ("1，2, 3", [(tktype.NUMBER, 1), (tktype.COMMA, ","), (tktype.NUMBER, 2), (tktype.COMMA, ","), (tktype.NUMBER, 3)]),
+        ("&x = 5", [(tktype.ASSIGN, "&"), (tktype.IDENTIFIER, "x"), (tktype.EQ, "="), (tktype.NUMBER, 5)]),
     ],
 )
 def test_lex_happy(text, expects: list[tuple[tktype, Any]]):

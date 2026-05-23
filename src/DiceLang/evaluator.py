@@ -11,8 +11,9 @@ from .tokens import TokenType
 
 
 class Evaluator:  # 求值器：输入 AST，输出结果（包含中间过程）。
-    def __init__(self, rng: random.Random | None = None):
+    def __init__(self, rng: random.Random | None = None, context: dict[str, AstNode] | None = None):
         self.rng = rng or random.Random()
+        self.context = context if context is not None else {}
 
     def same_family(self, father: AstNode, children: list[AstNode]) -> bool:
         """判断一组节点是否均属于同一运算家族（例如都是加法、或者都是乘法）。"""
@@ -118,7 +119,7 @@ if __name__ == "__main__":  # pragma: no cover
 
     RNG = random.Random(42)  # 固定随机种子, 以便复现
 
-    source = "2**2**2 % 2"
+    source = "2**2**2 % 2 + 5d(3d4 + 2)"
     lex = Lexer(source)
     tokens = lex.tokens
     print(f"Tokens: {lex}")

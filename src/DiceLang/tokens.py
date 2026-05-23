@@ -34,6 +34,7 @@ class TokenType(StrEnum):
     POW = "^"  # 1 ^ 2, or 3d6 ** 5, ^同**通用
     LPAREN = "("
     RPAREN = ")"
+    SEMICOLON = ";"
     # 比较运算
     LT = "LT"  # <, 3d6 < (5 < 6)
     GT = "GT"  # >, 3d6 > (5 > 6)
