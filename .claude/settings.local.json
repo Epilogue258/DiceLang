@@ -6,7 +6,8 @@
       "Bash(PYTHONIOENCODING=utf-8 python -m pytest test/unit/test_parser.py -v -s)",
       "Bash(C:/Python313/python.exe -c ' *)",
       "Bash(jj log:*)",
-      "Bash(rtk ls:*)"
+      "Bash(rtk ls:*)",
+      "Bash(uv run *)"
     ]
   }
 }

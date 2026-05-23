@@ -149,6 +149,10 @@ class UnaryOpNode(AstNode):
     op: TokenType
     operand: AstNode
 
+    @property
+    def family(self) -> Family:
+        return Family.ALL
+
     def __str__(self) -> str:
         return f"{self.op}{self.operand}"
 
