@@ -43,7 +43,7 @@ def _log(source: str, result: Lexer | DiceLangError) -> None:
 # ============================================================
 
 
-@pytest.mark.xfail(reason="待实现", strict=True)
+@pytest.mark.xfail(reason="待实现", strict=True, raises=TodoError)
 def test_fuzzing_lex():
     """模糊测试：随机生成合法的骰子表达式字符串，验证 Lexer 能正常解析。"""
     raise TodoError("test_fuzzing_lex")

@@ -11,7 +11,7 @@ from DiceLang.astnode import (
 from DiceLang.error import DiceLangError, ParserError, TodoError
 from DiceLang.lexer import Lexer
 from DiceLang.parser import Parser
-from DiceLang.tokens import TokenType
+from DiceLang.tokens import Token, TokenType
 
 
 # --- 辅助函数 ---
@@ -222,7 +222,7 @@ def test_dice_in_expression():
 # ============================================================
 
 
-@pytest.mark.xfail(reason="待实现", strict=True)
+@pytest.mark.xfail(reason="待实现", strict=True, raises=TodoError)
 @pytest.mark.parametrize(
     "source",
     [
@@ -232,7 +232,10 @@ def test_dice_in_expression():
 def test_unimplemented_features(source):
     result = parse_or_error(source)
     _log(source, result)
-    assert isinstance(result, ParserError)
+    if isinstance(result, TodoError):
+        raise result
+    else:
+        raise AssertionError(f"期望 TodoError, 得到 {type(result).__name__}: {result}")
 
 
 # ============================================================
@@ -240,6 +243,38 @@ def test_unimplemented_features(source):
 # ============================================================
 
 
-@pytest.mark.xfail(reason="待实现", strict=True)
+@pytest.mark.xfail(reason="待实现", strict=True, raises=TodoError)
 def test_fuzzing_parse():
     raise TodoError("test_fuzzing_parse")
+
+
+# ============================================================
+# 故意失败
+# ============================================================
+@pytest.mark.xfail(reason="故意失败, 用于测试框架", strict=True)
+@pytest.mark.parametrize("source", ["max(1, 2)"])
+def test_intentional_failure(source):
+    result = parse_or_error(source)
+    _log(source, result)
+    assert isinstance(result, ParserError)
+
+
+# ============================================================
+# 对刻意构造的Token失败
+# ============================================================
+
+
+@pytest.mark.xfail(reason="故意失败, 用于测试框架", strict=True)
+@pytest.mark.parametrize("source", [[Token(TokenType.PLUS, "+", "+", 0), Token(TokenType.NUMBER, "1", "1", 1)]])
+def test_intentional_bad_tokens_failure(source):
+    """测试框架的故意失败情况"""
+
+    def parse_or_error_without_lexer(s):
+        try:
+            return Parser(s).parse()
+        except DiceLangError as e:
+            return e
+
+    result = parse_or_error_without_lexer(source)
+    _log(str(source), result)
+    assert not isinstance(result, (ParserError, TodoError))

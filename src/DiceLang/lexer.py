@@ -39,10 +39,7 @@ class Lexer:  # 词法分析器：输入字符串，输出 Token 流。
                 while symbol not in SYMBOL_TO_TYPE and len(symbol) > 1:
                     symbol = symbol[:-1]  # 对于上述例子, 这里回退后symbol变作-, (会在下次循环捕获, 如此实现最长匹配
                 end_pos = index + len(symbol)
-                if symbol in SYMBOL_TO_TYPE:
-                    tokens.append(Token(SYMBOL_TO_TYPE[symbol], _standardize_symbol(symbol), symbol, index))
-                else:
-                    raise LexerError(f"未知的符号: {symbol} 位于索引{index}到{end_pos}部分")
+                tokens.append(Token(SYMBOL_TO_TYPE[symbol], _standardize_symbol(symbol), symbol, index))
                 index = end_pos
             else:
                 raise LexerError(f"未知的字符: {ch} 位于索引{index}部分")

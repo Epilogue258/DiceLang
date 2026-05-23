@@ -40,12 +40,16 @@ class Evaluator:  # 求值器：输入 AST，输出结果（包含中间过程�
                         return NumberNode(value=children[0].value ** children[1].value)
                     case TokenType.MOD:
                         return NumberNode(value=children[0].value % children[1].value)
+                    case _:  # pragma: no cover
+                        raise EvaluatorError(f"不支持的二元运算符: {node.op}", node=node)
             case ast.UnaryOpNode():
                 match node.op:
                     case TokenType.PLUS:
                         return NumberNode(value=children[0].value)
                     case TokenType.MINUS:
                         return NumberNode(value=-children[0].value)
+                    case _:  # pragma: no cover
+                        raise EvaluatorError(f"不支持的一元运算符: {node.op}", node=node)
             case ast.GroupNode():
                 return children[0]  # 直接返回唯一的子节点
             case ast.DiceNode():
@@ -56,9 +60,8 @@ class Evaluator:  # 求值器：输入 AST，输出结果（包含中间过程�
             case ast.DiceResNode():
                 # TODO selectors
                 return NumberNode(value=sum(node.rolls))
-            case _:
-                raise EvaluatorError(f"Unsupported node for folding: {node}")
-        raise TodoError("Evaluator.fold")
+            case _:  # pragma: no cover
+                raise EvaluatorError(f"无法折叠的节点: {node}", node=node)
 
     def simplify(self, node: Any) -> AstNode:
         """
@@ -108,7 +111,7 @@ class Evaluator:  # 求值器：输入 AST，输出结果（包含中间过程�
             yield node
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     # 简单测试
     from .lexer import Lexer
     from .parser import Parser

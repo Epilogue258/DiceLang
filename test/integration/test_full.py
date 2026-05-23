@@ -8,7 +8,7 @@ import random
 import pytest
 
 from DiceLang.astnode import NumberNode
-from DiceLang.error import DiceLangError, EvaluatorError, LexerError, ParserError
+from DiceLang.error import DiceLangError, EvaluatorError, LexerError, ParserError, TodoError
 from DiceLang.evaluator import Evaluator
 from DiceLang.lexer import Lexer
 from DiceLang.parser import Parser
@@ -31,6 +31,7 @@ def eval_str(source: str, rng: random.Random = RNG) -> NumberNode | DiceLangErro
         tokens = Lexer(source).tokens
         ast = Parser(tokens).ast
         *_, final = Evaluator(rng=rng).eval(ast)
+        assert isinstance(final, NumberNode), f"期望 NumberNode, 得到 {type(final).__name__}: {final}"
         return final
     except DiceLangError as e:
         return e
@@ -88,11 +89,11 @@ def test_arithmetic_basic(source, expected: int):
 @pytest.mark.parametrize(
     "source, expected",
     [
-        ("1 + 2 * 3", 7),       # 1+(2*3)
-        ("2 * 3 + 1", 7),       # (2*3)+1
-        ("2 + 3 ^ 2", 11),      # 2+(3^2)
-        ("2 ^ 3 * 4", 32),      # (2^3)*4
-        ("(1 + 2) * 3", 9),     # 括号覆盖优先级
+        ("1 + 2 * 3", 7),  # 1+(2*3)
+        ("2 * 3 + 1", 7),  # (2*3)+1
+        ("2 + 3 ^ 2", 11),  # 2+(3^2)
+        ("2 ^ 3 * 4", 32),  # (2^3)*4
+        ("(1 + 2) * 3", 9),  # 括号覆盖优先级
         ("(2 + 3) ^ 2", 25),
         ("2 * (3 + 4)", 14),
     ],
@@ -112,8 +113,8 @@ def test_precedence(source, expected: int):
 @pytest.mark.parametrize(
     "source, expected",
     [
-        ("2 ^ 3 ^ 2", 512),    # 2^(3^2) = 2^9 = 512
-        ("3 ^ 1 ^ 5", 3),      # 3^(1^5) = 3^1 = 3
+        ("2 ^ 3 ^ 2", 512),  # 2^(3^2) = 2^9 = 512
+        ("3 ^ 1 ^ 5", 3),  # 3^(1^5) = 3^1 = 3
     ],
 )
 def test_power_right_associative(source, expected: int):
@@ -277,8 +278,8 @@ def test_steps_dice():
     [
         ("1 + 2 + 3 + 4", 10),
         ("2 * 3 * 4", 24),
-        ("100 / 3 / 3", 11),           # (100//3)//3 = 33//3 = 11
-        ("2 ^ 3 + 4 * 5", 28),         # 8+20
+        ("100 / 3 / 3", 11),  # (100//3)//3 = 33//3 = 11
+        ("2 ^ 3 + 4 * 5", 28),  # 8+20
         ("(2 + 3) * (4 + 5)", 45),
         ("((1 + 1) + 1) * ((1 + 1) + 1)", 9),
     ],
@@ -298,8 +299,8 @@ def test_complex_expressions(source, expected: int):
 @pytest.mark.parametrize(
     "source",
     [
-        "1 @ 2",     # 非法字符
-        "1 +",       # 表达式不完整
+        "1 @ 2",  # 非法字符
+        "1 +",  # 表达式不完整
     ],
 )
 def test_error_invalid_input(source):
@@ -314,6 +315,6 @@ def test_error_invalid_input(source):
 # ============================================================
 
 
-@pytest.mark.xfail(reason="待实现", strict=True)
+@pytest.mark.xfail(reason="待实现", strict=True, raises=DiceLangError)
 def test_fuzzing_full():
-    raise NotImplementedError("test_fuzzing_full")
+    raise TodoError("test_fuzzing_full")

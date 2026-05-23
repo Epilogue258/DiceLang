@@ -131,7 +131,7 @@ class BinaryOpNode(AstNode):
                 return Family.MUL
             case TokenType.POW:
                 return Family.POW
-            case _:
+            case _:  # pragma: no cover
                 return Family.NONE  # 正常来说这不应该被触发, 是不是漏了运算符啦?
 
     def __str__(self) -> str:
@@ -181,7 +181,7 @@ class GroupNode(AstNode):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class FuncCallNode(AstNode):
+class FuncCallNode(AstNode):  # TODO
     args: GroupNode
 
     def __str__(self) -> str:

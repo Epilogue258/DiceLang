@@ -35,7 +35,7 @@ def main():
     print("所有测试通过！")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
 
 # TODO: 完成以下实现

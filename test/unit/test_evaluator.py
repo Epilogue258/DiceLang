@@ -141,6 +141,6 @@ def test_unary_plus_number():
 # ============================================================
 
 
-@pytest.mark.xfail(reason="待实现", strict=True)
+@pytest.mark.xfail(reason="待实现", strict=True, raises=TodoError)
 def test_fuzzing_eval():
     raise TodoError("test_fuzzing_eval")
