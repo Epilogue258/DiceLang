@@ -11,9 +11,10 @@ from .tokens import TokenType
 
 
 class Evaluator:  # 求值器：输入 AST，输出结果（包含中间过程）。
-    def __init__(self, rng: random.Random | None = None, context: dict[str, AstNode] | None = None):
+    def __init__(self, rng: random.Random | None = None, vars: dict[str, AstNode] | None = None, macros: dict[str, AstNode] | None = None):
         self.rng = rng or random.Random()
-        self.context = context if context is not None else {}
+        self.context = vars if vars is not None else {}
+        self.macros = macros if macros is not None else {}
 
     def same_family(self, father: AstNode, children: list[AstNode]) -> bool:
         """判断一组节点是否均属于同一运算家族（例如都是加法、或者都是乘法）。"""
@@ -36,7 +37,10 @@ class Evaluator:  # 求值器：输入 AST，输出结果（包含中间过程�
                     case TokenType.MULTIPLY:
                         return NumberNode(value=children[0].value * children[1].value)
                     case TokenType.DIVIDE:
-                        return NumberNode(value=children[0].value // children[1].value)
+                        if children[1].value != 0:
+                            return NumberNode(value=children[0].value // children[1].value)
+                        else:
+                            raise EvaluatorError("除数不能为零", node=node)
                     case TokenType.POW:
                         return NumberNode(value=children[0].value ** children[1].value)
                     case TokenType.MOD:

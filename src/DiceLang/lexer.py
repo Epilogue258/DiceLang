@@ -8,18 +8,12 @@ from .tokens import (
 
 
 class Lexer:  # 词法分析器：输入字符串，输出 Token 流。
-    def __init__(self, text: str | None = None):
+    def __init__(self, text: str | None = None):  # TODO 改为完全无状态的类型, 乃至类函数
         self.tokens: list[Token] = []
         if text is not None:
             self.tokens = self.tokenize(text)
 
-    def append(self, text: str):
-        self.tokens.extend(self.tokenize(text))
-
-    def replace(self, text: str):
-        self.tokens = self.tokenize(text)
-
-    def tokenize(self, text: str) -> list[Token]:
+    def tokenize(self, text: str) -> list[Token]:  # TODO 分号后面需要补上EOF
         index = 0
         tokens = []
         while index < len(text):
@@ -78,6 +72,8 @@ IDENTIFIER_TO_TYPE: dict[str, TokenType] = {
 }
 
 SYMBOL_TO_TYPE: dict[str, TokenType] = {
+    # 多字符运算符
+    "**=": TokenType.POW_ASSIGN,
     # 双字符运算符（注意顺序不重要，但消费时要按最长匹配）
     "**": TokenType.POW,
     "==": TokenType.EQ,
@@ -85,6 +81,12 @@ SYMBOL_TO_TYPE: dict[str, TokenType] = {
     "<=": TokenType.LTE,
     ">=": TokenType.GTE,
     "//": TokenType.DIVIDE,  # 归一化，我们毕竟不需要小数
+    "+=": TokenType.PLUS_ASSIGN,
+    "-=": TokenType.MINUS_ASSIGN,
+    "*=": TokenType.MULTIPLY_ASSIGN,
+    "/=": TokenType.DIVIDE_ASSIGN,
+    "%=": TokenType.MOD_ASSIGN,
+    "^=": TokenType.POW_ASSIGN,
     # 单字符运算符
     "+": TokenType.PLUS,
     "-": TokenType.MINUS,
@@ -96,8 +98,8 @@ SYMBOL_TO_TYPE: dict[str, TokenType] = {
     ")": TokenType.RPAREN,
     "<": TokenType.LT,
     ">": TokenType.GT,
-    "=": TokenType.EQ,
-    "&": TokenType.ASSIGN,
+    "=": TokenType.ASSIGN,
+    "&": TokenType.MACRO,
     "!": TokenType.EXPLODE,  # 爆炸骰
     ":": TokenType.COLON,
     ",": TokenType.COMMA,
@@ -111,6 +113,7 @@ STANDARD_SYMBOLS: dict[str, str] = {
     "e": "!",
     "；": ";",
     "，": ",",
+    "**=": "^=",
 }
 
 LONGEST_SYMBOL_LENGTH = max(len(sym) for sym in SYMBOL_TO_TYPE)  # 有趣的是，python直接取用默认获取的是key而无需解包

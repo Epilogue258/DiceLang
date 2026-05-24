@@ -59,6 +59,13 @@ class TokenType(StrEnum):
     COLON = "COLON"  # 负责转换，如：1D8 if ==1 : 2
     IDENTIFIER = "IDENTIFIER"  # 标识符, e.g. reroll...
     ASSIGN = "ASSIGN"  # "=" e.g. x = 3d6, y = x + 2
+    MACRO = "MACRO"  # 宏
+    PLUS_ASSIGN = "+="
+    MINUS_ASSIGN = "-="
+    MULTIPLY_ASSIGN = "*="
+    DIVIDE_ASSIGN = "/="
+    POW_ASSIGN = "**"
+    MOD_ASSIGN = "%="
 
     EOF = "EOF"
 

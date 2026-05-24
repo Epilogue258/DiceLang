@@ -15,12 +15,12 @@ from .tokens import Token, TokenType
 
 
 class Parser:  # TODO 解析器：输入 Token 流，输出 AST（抽象语法树）。
-    def __init__(self, tokens: list[Token]):
-        self.tokens = tokens
+    def __init__(self, tokens: list[Token] | None = None):  # TODO 改为完全无状态的类型, 乃至类函数
+        self.tokens = tokens if tokens is not None else []
         self.pos = 0
 
-        if tokens and tokens[-1].type != TokenType.EOF:
-            raise ParserError("Token流必须以EOF结尾", token=tokens[-1] if tokens else None)
+        if self.tokens and self.tokens[-1].type != TokenType.EOF:
+            raise ParserError("Token流必须以EOF结尾", token=self.tokens[-1] if self.tokens else None)
 
         self.ast: AstNode = self.parse()
 
@@ -121,7 +121,7 @@ class Parser:  # TODO 解析器：输入 Token 流，输出 AST（抽象语法�
             case _:  # TODO：日后可以添加用户自定义字典
                 raise ParserError(f"不支持的中缀操作: {op_token.type}, 位于{op_token.pos}, 内容: {op_token.text}")
 
-    def parse(self, min_bp: int = 0) -> AstNode:
+    def parse(self, min_bp: int = 0, tokens: list[Token] | None = None) -> AstNode:
         """根据上一个绑定力返回最终的树
 
         Args:
@@ -130,6 +130,8 @@ class Parser:  # TODO 解析器：输入 Token 流，输出 AST（抽象语法�
         Returns:
             AstNode: 返回一棵AST树，其中绑定力更高的OP总是位于树顶
         """
+        if tokens is not None:  # TODO
+            self.tokens = tokens
         left = self.prefix_parse(self.consume())  # 消耗前缀
 
         # 中缀解析

@@ -181,6 +181,18 @@ class GroupNode(AstNode):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class VarNode(AstNode):
+    name: str
+
+    @property
+    def family(self) -> Family:
+        return Family.NONE  # 与任何节点不同族, 故而至少需要化简一次
+
+    def __str__(self) -> str:
+        return self.name
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class FuncCallNode(AstNode):  # TODO
     args: GroupNode
 

@@ -4,3 +4,4 @@ htmlcov/
 *.pyc
 .coverage
 .claude/
+todo.md
