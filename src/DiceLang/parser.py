@@ -217,10 +217,10 @@ if __name__ == "__main__":  # pragma: no cover  # TODO 测试用
     from .lexer import Lexer
 
     sounce = "1+2*2**5d6-4*(3+5)"
-    lexer = Lexer(sounce)
+    tokens = Lexer.tokenize(sounce)
 
-    print(f"\n{lexer!r}\n")
-    parser = Parser(lexer.tokens)
+    print(f"\nTokens: {Lexer.format_tokens(tokens)}\n")
+    parser = Parser(tokens)
 
     print(f"{parser}\n")
     print(f"{parser.ast}\n")

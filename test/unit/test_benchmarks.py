@@ -14,7 +14,7 @@ def evaluator():
 def ast_medium():
     """一个中等复杂度的表达式 AST"""
     source = "1 + 2*3 + 4d6 + (5+6)*7 + 2**3**2"
-    tokens = Lexer(source).tokens
+    tokens = Lexer.tokenize(source)
     return Parser(tokens).ast
 
 
@@ -26,6 +26,6 @@ def test_simplify_benchmark(benchmark, evaluator, ast_medium):
 
 def test_parse_benchmark(benchmark):
     source = "1 + 2*3 + 4d6 + (5+6)*7 + 2**3**2 + 1000d1000"
-    tokens = Lexer(source).tokens
+    tokens = Lexer.tokenize(source)
     result = benchmark(lambda: Parser(tokens).ast)
     assert result is not None

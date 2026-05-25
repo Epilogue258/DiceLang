@@ -28,7 +28,7 @@ class _Color:
 def eval_str(source: str, rng: random.Random = RNG) -> NumberNode | DiceLangError:
     """从字符串走完整链路求值，返回最终的 NumberNode 或错误。"""
     try:
-        tokens = Lexer(source).tokens
+        tokens = Lexer.tokenize(source)
         ast = Parser(tokens).ast
         *_, final = Evaluator(rng=rng).eval(ast)
         assert isinstance(final, NumberNode), f"期望 NumberNode, 得到 {type(final).__name__}: {final}"
@@ -40,7 +40,7 @@ def eval_str(source: str, rng: random.Random = RNG) -> NumberNode | DiceLangErro
 def eval_steps(source: str, rng: random.Random = RNG) -> list[str] | DiceLangError:
     """从字符串走完整链路，返回每一步化简的字符串表示。"""
     try:
-        tokens = Lexer(source).tokens
+        tokens = Lexer.tokenize(source)
         ast = Parser(tokens).ast
         return list(Evaluator(rng=rng).to_str(ast))
     except DiceLangError as e:

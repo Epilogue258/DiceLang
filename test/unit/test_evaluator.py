@@ -91,7 +91,7 @@ def test_arithmetic_exprs(expr: str, expected: int):
     from DiceLang.lexer import Lexer
     from DiceLang.parser import Parser
 
-    ast = Parser(Lexer(expr).tokens).ast
+    ast = Parser(Lexer.tokenize(expr)).ast
     result = eval_final(ast)
     _log(expr, result)
     assert isinstance(result, NumberNode)

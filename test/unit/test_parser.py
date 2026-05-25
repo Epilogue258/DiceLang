@@ -24,7 +24,7 @@ class _Color:
 
 
 def parse(source: str) -> AstNode:
-    return Parser(Lexer(source).tokens).ast
+    return Parser(Lexer.tokenize(source)).ast
 
 
 def parse_or_error(source: str) -> AstNode | DiceLangError:

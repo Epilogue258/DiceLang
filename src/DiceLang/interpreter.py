@@ -13,7 +13,6 @@ from .tokens import Token, TokenType
 
 
 class Interpreter:
-    lexer: Lexer
     parser: Parser
     evaluator: Evaluator
     buffer: list[Statement]
@@ -28,7 +27,6 @@ class Interpreter:
     ):
         self.vars = vars if vars is not None else {}
         self.macros = macros if macros is not None else {}
-        self.lexer = Lexer()
         self.res = None
         self.parser = Parser()
         self.compile(text)
@@ -38,8 +36,9 @@ class Interpreter:
         try:
             chunks: list[list[Token]] = []
             chunk: list[Token] = []
-            for token in self.lexer.tokenize(text):
+            for token in Lexer.tokenize(text):
                 if token.type == TokenType.SEMICOLON:
+                    chunk.append(Token(TokenType.EOF, None, "EOF", -1))
                     chunks.append(chunk)
                     chunk = []
                 else:

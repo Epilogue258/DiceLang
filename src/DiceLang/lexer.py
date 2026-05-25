@@ -8,12 +8,8 @@ from .tokens import (
 
 
 class Lexer:  # 词法分析器：输入字符串，输出 Token 流。
-    def __init__(self, text: str | None = None):  # TODO 改为完全无状态的类型, 乃至类函数
-        self.tokens: list[Token] = []
-        if text is not None:
-            self.tokens = self.tokenize(text)
-
-    def tokenize(self, text: str) -> list[Token]:  # TODO 分号后面需要补上EOF
+    @staticmethod
+    def tokenize(text: str) -> list[Token]:
         index = 0
         tokens = []
         while index < len(text):
@@ -49,14 +45,12 @@ class Lexer:  # 词法分析器：输入字符串，输出 Token 流。
         tokens.append(Token(TokenType.EOF, None, "EOF: 抵达文件末尾", -1))
         return tokens
 
-    def __str__(self) -> str:
+    @staticmethod
+    def format_tokens(tokens: list[Token]):
         # 令人难堪的是，python的list自动调用的是repr，故而即使print(f"{tokens}")而非{tokens！r}，其结果可能也会令你错愕
 
-        tokens = " ".join(map(str, self.tokens))
-        return f"<Lexer: {tokens}>" if tokens else "<Lexer: empty>"
-
-    def __repr__(self) -> str:
-        return f"<Lexer: {self.tokens}>" if self.tokens else "<Lexer: empty>"
+        res: str = " ".join(map(str, tokens))
+        return f"<Lexer: {res}>" if res else "<Lexer: empty>"
 
 
 IDENTIFIER_TO_TYPE: dict[str, TokenType] = {

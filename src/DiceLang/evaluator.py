@@ -124,9 +124,8 @@ if __name__ == "__main__":  # pragma: no cover
     RNG = random.Random(42)  # 固定随机种子, 以便复现
 
     source = "2**2**2 % 2 + 5d(3d4 + 2)"
-    lex = Lexer(source)
-    tokens = lex.tokens
-    print(f"Tokens: {lex}")
+    tokens = Lexer.tokenize(source)
+    print(f"Tokens: {Lexer.format_tokens(tokens)}")
     asttree = Parser(tokens).ast
     print(f"AST: {asttree}")
     evaluator = Evaluator(rng=RNG)
