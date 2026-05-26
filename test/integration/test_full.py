@@ -12,6 +12,7 @@ from DiceLang.error import DiceLangError, EvaluatorError, LexerError, ParserErro
 from DiceLang.evaluator import Evaluator
 from DiceLang.lexer import Lexer
 from DiceLang.parser import Parser
+from DiceLang.statement import ErrorStmt, ExprStmt, MacroDefStmt, Statement, VarDefStmt
 
 RNG = random.Random(42)  # 固定随机种子, 以便复现
 
@@ -29,7 +30,11 @@ def eval_str(source: str, rng: random.Random = RNG) -> NumberNode | DiceLangErro
     """从字符串走完整链路求值，返回最终的 NumberNode 或错误。"""
     try:
         tokens = Lexer.tokenize(source)
-        ast = Parser(tokens).ast
+        stmt = Parser(tokens).parse()
+        if isinstance(stmt, ExprStmt):
+            ast = stmt.value
+        else:
+            raise TodoError("目前仅支持表达式语句的求值")
         *_, final = Evaluator(rng=rng).eval(ast)
         assert isinstance(final, NumberNode), f"期望 NumberNode, 得到 {type(final).__name__}: {final}"
         return final
@@ -41,7 +46,11 @@ def eval_steps(source: str, rng: random.Random = RNG) -> list[str] | DiceLangErr
     """从字符串走完整链路，返回每一步化简的字符串表示。"""
     try:
         tokens = Lexer.tokenize(source)
-        ast = Parser(tokens).ast
+        stmt = Parser(tokens).parse()
+        if isinstance(stmt, ExprStmt):
+            ast = stmt.value
+        else:
+            raise TodoError("目前仅支持表达式语句的求值")
         return list(Evaluator(rng=rng).to_str(ast))
     except DiceLangError as e:
         return e
@@ -197,6 +206,8 @@ def test_dice_deterministic():
     result1 = eval_str("2d6", rng=rng)
     rng2 = random.Random(42)
     result2 = eval_str("2d6", rng=rng2)
+    assert isinstance(result1, NumberNode)
+    assert isinstance(result2, NumberNode)
     assert result1.value == result2.value
 
 

@@ -7,6 +7,7 @@ from DiceLang.astnode import AstNode, BinaryOpNode, NumberNode, UnaryOpNode
 from DiceLang.error import DiceLangError, EvaluatorError, TodoError
 from DiceLang.evaluator import Evaluator
 from DiceLang.tokens import TokenType as tktype
+from DiceLang.statement import ExprStmt
 
 RNG = random.Random(42)  # 固定随机种子, 以便复现
 
@@ -31,7 +32,7 @@ def eval_or_error(node: AstNode) -> Generator[AstNode] | DiceLangError:
 def eval_final(node: AstNode) -> NumberNode | DiceLangError:
     """求值并返回最终结果（NumberNode），捕获错误。"""
     try:
-        result = Evaluator(rng=RNG).eval(node)
+        result = Evaluator(rng=RNG).eval(node)  # TODO RES重构导致的问题
         *_, final = result
         return final
     except DiceLangError as e:
@@ -91,7 +92,12 @@ def test_arithmetic_exprs(expr: str, expected: int):
     from DiceLang.lexer import Lexer
     from DiceLang.parser import Parser
 
-    ast = Parser(Lexer.tokenize(expr)).ast
+    stmt = Parser(Lexer.tokenize(expr)).parse()
+    if isinstance(stmt, ExprStmt):
+        ast = stmt.value
+    else:
+        raise TodoError("目前仅支持表达式语句的求值")
+
     result = eval_final(ast)
     _log(expr, result)
     assert isinstance(result, NumberNode)

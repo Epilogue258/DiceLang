@@ -37,6 +37,9 @@ class Family(enum.Flag):  # 底层就是位掩码啦
 # 多说无益, 强制所有参数必须以关键字传入就完全避免了这个问题, 如果不理解自己试试不这么做会如何吧
 @dataclass(frozen=True, slots=True, kw_only=True)
 class AstNode:
+    pos: int | None = None
+    length: int | None = None
+
     def __str__(self) -> str:
         """子类重载为用于人类可读的简洁输出；如需结构化表示，请使用 repr。"""
         return self.__class__.__name__
@@ -193,9 +196,9 @@ class VarNode(AstNode):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class FuncCallNode(AstNode):  # TODO
+class FuncCallNode(AstNode):  # TODO FUNCALL
+    func: str
     args: GroupNode
 
     def __str__(self) -> str:
-        return f"{self.args}"
-        # return f"( {', '.join(map(str, self.args))} )"
+        return f"{self.func}{self.args}"

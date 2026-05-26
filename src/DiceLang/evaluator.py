@@ -5,13 +5,16 @@ import DiceLang.astnode as ast
 
 from .astnode import AstNode, BinaryOpNode, NumberNode
 from .error import EvaluatorError, TodoError
+from .statement import ExprStmt
 from .tokens import TokenType
 
 # from .result import EvalResult
 
 
 class Evaluator:  # 求值器：输入 AST，输出结果（包含中间过程）。
-    def __init__(self, rng: random.Random | None = None, vars: dict[str, AstNode] | None = None, macros: dict[str, AstNode] | None = None):
+    def __init__(
+        self, rng: random.Random | None = None, vars: dict[str, int] | None = None, macros: dict[str, AstNode] | None = None
+    ):
         self.rng = rng or random.Random()
         self.context = vars if vars is not None else {}
         self.macros = macros if macros is not None else {}
@@ -126,14 +129,17 @@ if __name__ == "__main__":  # pragma: no cover
     source = "2**2**2 % 2 + 5d(3d4 + 2)"
     tokens = Lexer.tokenize(source)
     print(f"Tokens: {Lexer.format_tokens(tokens)}")
-    asttree = Parser(tokens).ast
+    stmt = Parser(tokens).parse()
+    if isinstance(stmt, ExprStmt):
+        asttree = stmt.value
+    else:
+        raise TodoError("目前仅支持表达式语句的求值")
     print(f"AST: {asttree}")
     evaluator = Evaluator(rng=RNG)
     index = 0
     print("========== Evaluation Steps =========")
-    for step in evaluator.to_str(asttree):
+    for index, step in enumerate(evaluator.to_str(asttree)):
         print(f"Step {index}: {step}")
-        index += 1
-        if index > 10:
+        if index >= 10:
             print("过多步骤, 可能进入死循环, 测试终止。")
             break
