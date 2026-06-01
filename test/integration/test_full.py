@@ -12,7 +12,7 @@ from DiceLang.error import DiceLangError, EvaluatorError, LexerError, ParserErro
 from DiceLang.evaluator import Evaluator
 from DiceLang.lexer import Lexer
 from DiceLang.parser import Parser
-from DiceLang.statement import ErrorStmt, ExprStmt, MacroDefStmt, Statement, VarDefStmt
+from DiceLang.statement import ErrorStmt, ExprStmt, Statement
 
 RNG = random.Random(42)  # 固定随机种子, 以便复现
 
@@ -31,6 +31,8 @@ def eval_str(source: str, rng: random.Random = RNG) -> NumberNode | DiceLangErro
     try:
         tokens = Lexer.tokenize(source)
         stmt = Parser(tokens).parse()
+        if isinstance(stmt, ErrorStmt):
+            raise stmt.value  # 适配 Parser 的新契约：parse() 不抛异常，返回 ErrorStmt
         if isinstance(stmt, ExprStmt):
             ast = stmt.value
         else:
@@ -47,6 +49,8 @@ def eval_steps(source: str, rng: random.Random = RNG) -> list[str] | DiceLangErr
     try:
         tokens = Lexer.tokenize(source)
         stmt = Parser(tokens).parse()
+        if isinstance(stmt, ErrorStmt):
+            raise stmt.value
         if isinstance(stmt, ExprStmt):
             ast = stmt.value
         else:

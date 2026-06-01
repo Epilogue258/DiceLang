@@ -11,7 +11,7 @@ from DiceLang.astnode import (
 from DiceLang.error import DiceLangError, ParserError, TodoError
 from DiceLang.lexer import Lexer
 from DiceLang.parser import Parser
-from DiceLang.statement import ExprStmt
+from DiceLang.statement import ErrorStmt, ExprStmt
 from DiceLang.tokens import Token, TokenType
 
 
@@ -26,10 +26,11 @@ class _Color:
 
 def parse(source: str) -> AstNode:
     stmt = Parser(Lexer.tokenize(source)).parse()
+    if isinstance(stmt, ErrorStmt):
+        raise stmt.value  # 将 ErrorStmt 中的错误重新抛出，供 parse_or_error 捕获
     if isinstance(stmt, ExprStmt):
         return stmt.value
-    else:
-        raise TodoError("目前仅支持表达式语句的解析")
+    raise TodoError("目前仅支持表达式语句的解析")
 
 
 def parse_or_error(source: str) -> AstNode | DiceLangError:
