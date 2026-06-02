@@ -7,12 +7,11 @@ import random
 
 import pytest
 
-from DiceLang.astnode import NumberNode
-from DiceLang.error import DiceLangError, EvaluatorError, LexerError, ParserError, TodoError
+from DiceLang.error import DiceLangError, TodoError
 from DiceLang.evaluator import Evaluator
 from DiceLang.lexer import Lexer
 from DiceLang.parser import Parser
-from DiceLang.statement import ErrorStmt, ExprStmt, Statement
+from DiceLang.result import ErrorRes, ExprRes
 
 RNG = random.Random(42)  # 固定随机种子, 以便复现
 
@@ -26,20 +25,16 @@ class _Color:
     RESET = "\033[0m"
 
 
-def eval_str(source: str, rng: random.Random = RNG) -> NumberNode | DiceLangError:
-    """从字符串走完整链路求值，返回最终的 NumberNode 或错误。"""
+def eval_str(source: str, rng: random.Random = RNG) -> ExprRes | DiceLangError:
+    """从字符串走完整链路求值，返回 ExprRes 或错误。"""
     try:
         tokens = Lexer.tokenize(source)
         stmt = Parser(tokens).parse()
-        if isinstance(stmt, ErrorStmt):
-            raise stmt.value  # 适配 Parser 的新契约：parse() 不抛异常，返回 ErrorStmt
-        if isinstance(stmt, ExprStmt):
-            ast = stmt.value
-        else:
-            raise TodoError("目前仅支持表达式语句的求值")
-        *_, final = Evaluator(rng=rng).eval(ast)
-        assert isinstance(final, NumberNode), f"期望 NumberNode, 得到 {type(final).__name__}: {final}"
-        return final
+        result = Evaluator(rng=rng).eval(stmt)
+        if isinstance(result, ErrorRes):
+            return result.value
+        assert isinstance(result, ExprRes), f"期望 ExprRes, 得到 {type(result).__name__}: {result}"
+        return result
     except DiceLangError as e:
         return e
 
@@ -49,13 +44,11 @@ def eval_steps(source: str, rng: random.Random = RNG) -> list[str] | DiceLangErr
     try:
         tokens = Lexer.tokenize(source)
         stmt = Parser(tokens).parse()
-        if isinstance(stmt, ErrorStmt):
-            raise stmt.value
-        if isinstance(stmt, ExprStmt):
-            ast = stmt.value
-        else:
-            raise TodoError("目前仅支持表达式语句的求值")
-        return list(Evaluator(rng=rng).to_str(ast))
+        result = Evaluator(rng=rng).eval(stmt)
+        if isinstance(result, ErrorRes):
+            return result.value
+        assert isinstance(result, ExprRes), f"期望 ExprRes, 得到 {type(result).__name__}"
+        return list(result.steps)
     except DiceLangError as e:
         return e
 
@@ -90,7 +83,7 @@ def _log(source: str, result) -> None:
 def test_arithmetic_basic(source, expected: int):
     result = eval_str(source)
     _log(source, result)
-    assert isinstance(result, NumberNode), f"期望 NumberNode, 得到 {type(result).__name__}: {result}"
+    assert isinstance(result, ExprRes), f"期望 ExprRes, 得到 {type(result).__name__}: {result}"
     assert result.value == expected
 
 
@@ -114,7 +107,7 @@ def test_arithmetic_basic(source, expected: int):
 def test_precedence(source, expected: int):
     result = eval_str(source)
     _log(source, result)
-    assert isinstance(result, NumberNode)
+    assert isinstance(result, ExprRes)
     assert result.value == expected
 
 
@@ -133,7 +126,7 @@ def test_precedence(source, expected: int):
 def test_power_right_associative(source, expected: int):
     result = eval_str(source)
     _log(source, result)
-    assert isinstance(result, NumberNode)
+    assert isinstance(result, ExprRes)
     assert result.value == expected
 
 
@@ -156,7 +149,7 @@ def test_power_right_associative(source, expected: int):
 def test_unary_ops(source, expected: int):
     result = eval_str(source)
     _log(source, result)
-    assert isinstance(result, NumberNode)
+    assert isinstance(result, ExprRes)
     assert result.value == expected
 
 
@@ -179,7 +172,7 @@ def test_unary_ops(source, expected: int):
 def test_group(source, expected: int):
     result = eval_str(source)
     _log(source, result)
-    assert isinstance(result, NumberNode)
+    assert isinstance(result, ExprRes)
     assert result.value == expected
 
 
@@ -192,7 +185,7 @@ def test_dice_basic():
     """1d6 的结果应在 [1, 6] 范围内"""
     result = eval_str("1d6")
     _log("1d6", result)
-    assert isinstance(result, NumberNode)
+    assert isinstance(result, ExprRes)
     assert 1 <= result.value <= 6
 
 
@@ -200,7 +193,7 @@ def test_dice_multiple():
     """3d6 的结果应在 [3, 18] 范围内"""
     result = eval_str("3d6")
     _log("3d6", result)
-    assert isinstance(result, NumberNode)
+    assert isinstance(result, ExprRes)
     assert 3 <= result.value <= 18
 
 
@@ -210,8 +203,8 @@ def test_dice_deterministic():
     result1 = eval_str("2d6", rng=rng)
     rng2 = random.Random(42)
     result2 = eval_str("2d6", rng=rng2)
-    assert isinstance(result1, NumberNode)
-    assert isinstance(result2, NumberNode)
+    assert isinstance(result1, ExprRes)
+    assert isinstance(result2, ExprRes)
     assert result1.value == result2.value
 
 
@@ -219,7 +212,7 @@ def test_dice_in_expression():
     """骰子在表达式中的混合运算"""
     result = eval_str("1d1 + 5")
     _log("1d1 + 5", result)
-    assert isinstance(result, NumberNode)
+    assert isinstance(result, ExprRes)
     assert result.value == 6  # 1d1 必定为 1
 
 
@@ -227,7 +220,7 @@ def test_dice_sides_1():
     """1d1 始终为 1"""
     result = eval_str("4d1")
     _log("4d1", result)
-    assert isinstance(result, NumberNode)
+    assert isinstance(result, ExprRes)
     assert result.value == 4
 
 
@@ -236,7 +229,7 @@ def test_dice_with_arithmetic():
     # 1d1 = 1, 1 + 2 * 1d1 = 1 + 2*1 = 3
     result = eval_str("1 + 2 * 1d1")
     _log("1 + 2 * 1d1", result)
-    assert isinstance(result, NumberNode)
+    assert isinstance(result, ExprRes)
     assert result.value == 3
 
 
@@ -244,7 +237,7 @@ def test_dice_range_large():
     """较大面数骰子的范围检查"""
     result = eval_str("1d100")
     _log("1d100", result)
-    assert isinstance(result, NumberNode)
+    assert isinstance(result, ExprRes)
     assert 1 <= result.value <= 100
 
 
@@ -302,7 +295,7 @@ def test_steps_dice():
 def test_complex_expressions(source, expected: int):
     result = eval_str(source)
     _log(source, result)
-    assert isinstance(result, NumberNode)
+    assert isinstance(result, ExprRes)
     assert result.value == expected
 
 

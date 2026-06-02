@@ -1,11 +1,11 @@
 import random
-from collections.abc import Generator
 
 import pytest
 
 from DiceLang.astnode import AstNode, BinaryOpNode, NumberNode, UnaryOpNode
-from DiceLang.error import DiceLangError, EvaluatorError, TodoError
+from DiceLang.error import DiceLangError, TodoError
 from DiceLang.evaluator import Evaluator
+from DiceLang.result import ErrorRes, ExprRes
 from DiceLang.tokens import TokenType as tktype
 from DiceLang.statement import ExprStmt
 
@@ -21,20 +21,14 @@ class _Color:
     RESET = "\033[0m"
 
 
-def eval_or_error(node: AstNode) -> Generator[AstNode] | DiceLangError:
-    """求值并捕获错误，总是返回结果供测试打印。"""
+def eval_final(node: AstNode) -> int | DiceLangError:
+    """求值并返回最终整数结果，捕获错误。"""
     try:
-        return Evaluator(rng=RNG).eval(node)
-    except DiceLangError as e:
-        return e
-
-
-def eval_final(node: AstNode) -> NumberNode | DiceLangError:
-    """求值并返回最终结果（NumberNode），捕获错误。"""
-    try:
-        result = Evaluator(rng=RNG).eval(node)  # TODO RES重构导致的问题
-        *_, final = result
-        return final
+        result = Evaluator(rng=RNG).eval(ExprStmt(value=node))
+        if isinstance(result, ErrorRes):
+            return result.value
+        assert isinstance(result, ExprRes)
+        return result.value
     except DiceLangError as e:
         return e
 
@@ -62,8 +56,8 @@ def test_arithmetic_complex():
 
     result = eval_final(expr)
     _log("(1+1+1)*(1+1)+(1+1)", result)
-    assert isinstance(result, NumberNode)
-    assert result.value == 8
+    assert not isinstance(result, DiceLangError)
+    assert result == 8
 
 
 @pytest.mark.parametrize(
@@ -100,8 +94,8 @@ def test_arithmetic_exprs(expr: str, expected: int):
 
     result = eval_final(ast)
     _log(expr, result)
-    assert isinstance(result, NumberNode)
-    assert result.value == expected
+    assert not isinstance(result, DiceLangError)
+    assert result == expected
 
 
 # ============================================================
@@ -117,8 +111,8 @@ def test_power_right_associative():
 
     result = eval_final(expr)
     _log("2^3^2", result)
-    assert isinstance(result, NumberNode)
-    assert result.value == 512
+    assert not isinstance(result, DiceLangError)
+    assert result == 512
 
 
 # ============================================================
@@ -130,16 +124,16 @@ def test_unary_minus_number():
     node = UnaryOpNode(op=tktype.MINUS, operand=NumberNode(value=42))
     result = eval_final(node)
     _log("-42", result)
-    assert isinstance(result, NumberNode)
-    assert result.value == -42
+    assert not isinstance(result, DiceLangError)
+    assert result == -42
 
 
 def test_unary_plus_number():
     node = UnaryOpNode(op=tktype.PLUS, operand=NumberNode(value=7))
     result = eval_final(node)
     _log("+7", result)
-    assert isinstance(result, NumberNode)
-    assert result.value == 7
+    assert not isinstance(result, DiceLangError)
+    assert result == 7
 
 
 # ============================================================

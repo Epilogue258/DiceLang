@@ -43,8 +43,9 @@ class Interpreter:
         chunk: list[Token] = []
         for token in tokens:
             if token.type == TokenType.SEMICOLON:
-                chunk.append(Token(TokenType.EOF, None, "EOF", -1))
-                chunks.append(chunk)
+                if chunk:
+                    chunk.append(Token(TokenType.EOF, None, "EOF", -1))
+                    chunks.append(chunk)
                 chunk = []
             else:
                 chunk.append(token)
@@ -69,7 +70,7 @@ class Interpreter:
         """
         if isinstance(stmt, ErrorStmt):
             return ErrorRes(value=stmt.value)
-        return self.evaluator.evaluate(stmt.value)
+        return self.evaluator.eval(stmt)
 
     def append(self, text: str):
         raise TodoError("Interpreter.append 尚未实现")
