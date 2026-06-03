@@ -3,10 +3,17 @@ from .tokens import Token
 
 
 class DiceLangError(Exception):
-    """DiceLang 相关错误的基类。"""
+    """DiceLang 相关错误的基类。
+
+    标准化属性（所有子类必须提供）：
+    - pos: int | None   错误在源文本中的起始位置
+    - text: str | None  错误对应的源文本片段（Parser/Lexer 提供，Evaluator 可能为 None）
+    """
 
     def __init__(self, message: str = "", **kwargs):
         super().__init__(message)
+        self.pos: int | None = kwargs.pop("pos", None)
+        self.text: str | None = kwargs.pop("text", None)
         self._extra: dict[str, object] = kwargs
 
     def _extra_info(self) -> dict[str, str]:
@@ -25,9 +32,7 @@ class LexerError(DiceLangError):
     """用于表示词法分析阶段的错误。"""
 
     def __init__(self, message, text=None, pos=None, **kwargs):
-        self.text = text
-        self.pos = pos
-        super().__init__(message, text=text, pos=pos, **kwargs)
+        super().__init__(message, pos=pos, text=text, **kwargs)
 
 
 class ParserError(DiceLangError):
@@ -35,9 +40,10 @@ class ParserError(DiceLangError):
 
     def __init__(self, message: str = "", token: Token | None = None, pos=None, tokens=None, **kwargs):
         self.token = token
-        self.pos = pos
+        self.pos = pos if pos is not None else (token.pos if token else None)
         self.tokens = tokens
-        super().__init__(message, token=token, pos=pos, tokens=tokens, **kwargs)
+        text = token.text if token else None
+        super().__init__(message, pos=self.pos, text=text, token=token, tokens=tokens, **kwargs)
 
 
 class EvaluatorError(DiceLangError):
@@ -45,7 +51,13 @@ class EvaluatorError(DiceLangError):
 
     def __init__(self, message: str = "", ast_tree: AstNode | None = None, **kwargs):
         self.ast_tree = ast_tree
-        super().__init__(message, ast_tree=ast_tree, **kwargs)
+        super().__init__(
+            message,
+            pos=ast_tree.pos if ast_tree else None,
+            text=None,
+            ast_tree=ast_tree,
+            **kwargs,
+        )
 
 
 class TodoError(DiceLangError):

@@ -1,9 +1,6 @@
-# DiceLang/__init__.py
-# TODO 重写Lexer, Parser, 使其无状态
-# TODO 从子模块里把最常用的类引进来
-from .evaluator import Evaluator
-from .lexer import Lexer
-from .parser import Parser
-from .tokens import Token, TokenType
+# DiceLang —— 骰子表达式解析与求值的领域特定语言
 
-__version__ = "0.1.0"
+from .evaluator import Evaluator
+from .error import DiceLangError, EvaluatorError, LexerError, ParserError
+from .interpreter import Interpreter
+from .result import ErrorRes, ExprRes, MacroDefRes, Result, VarDefRes

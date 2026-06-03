@@ -7,7 +7,7 @@ from .error import DiceLangError, TodoError
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Statement:
-    value: Any
+    value: Any = None  # 子类按需重定义
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -16,9 +16,9 @@ class ExprStmt(Statement):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class VarDefStmt(Statement):  # TODO
-    value: list[tuple[str, AstNode, bool]]  # name, value, is_def_succeess
-    # raise TodoError("VarDefStmt 尚未实现")
+class VarDefStmt(Statement):
+    names: tuple[str, ...]
+    expr: AstNode
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

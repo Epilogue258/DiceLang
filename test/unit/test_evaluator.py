@@ -2,12 +2,12 @@ import random
 
 import pytest
 
-from DiceLang.astnode import AstNode, BinaryOpNode, NumberNode, UnaryOpNode
+from DiceLang.astnode import AstNode, BinaryOpNode, NumberNode, UnaryOpNode, VarNode
 from DiceLang.error import DiceLangError, TodoError
 from DiceLang.evaluator import Evaluator
-from DiceLang.result import ErrorRes, ExprRes
+from DiceLang.result import ErrorRes, ExprRes, VarDefRes
 from DiceLang.tokens import TokenType as tktype
-from DiceLang.statement import ExprStmt
+from DiceLang.statement import ExprStmt, VarDefStmt
 
 RNG = random.Random(42)  # 固定随机种子, 以便复现
 
@@ -34,9 +34,11 @@ def eval_final(node: AstNode) -> int | DiceLangError:
 
 
 def _log(desc: str, result) -> None:
-    is_err = isinstance(result, DiceLangError)
+    is_err = isinstance(result, (DiceLangError, ErrorRes))
     tag = f"{_Color.RED}{_Color.BOLD}Error{_Color.RESET}" if is_err else f"{_Color.GREEN}OK{_Color.RESET}"
-    raw = f"{_Color.YELLOW}{result}{_Color.RESET}" if is_err else str(result)
+    raw = f"{_Color.YELLOW}{result.value}{_Color.RESET}" if isinstance(result, ErrorRes) else (
+        f"{_Color.YELLOW}{result}{_Color.RESET}" if is_err else str(result)
+    )
     indented = raw.replace("\n", "\n  ")
     print(f"\n  case={desc!r}  [{tag}]\n  {indented}")
 
@@ -144,3 +146,77 @@ def test_unary_plus_number():
 @pytest.mark.xfail(reason="待实现", strict=True, raises=TodoError)
 def test_fuzzing_eval():
     raise TodoError("test_fuzzing_eval")
+
+
+# ============================================================
+# VarDef（手工构造 Statement，测试 Evaluator 层的变量赋值语义）
+# ============================================================
+
+
+def test_vardef_simple():
+    """x = 5"""
+    stmt = VarDefStmt(names=("x",), expr=NumberNode(value=5))
+    result = Evaluator().eval(stmt)
+    _log("x = 5", result)
+    assert isinstance(result, VarDefRes)
+    assert result.names == ("x",)
+    assert result.old_values == {"x": None}
+    assert result.new_value == 5
+
+
+def test_vardef_expression():
+    """x = 2 + 3"""
+    expr = BinaryOpNode(op=tktype.PLUS, left=NumberNode(value=2), right=NumberNode(value=3))
+    stmt = VarDefStmt(names=("x",), expr=expr)
+    result = Evaluator().eval(stmt)
+    _log("x = 2 + 3", result)
+    assert isinstance(result, VarDefRes)
+    assert result.new_value == 5
+
+
+def test_vardef_reassign():
+    """x = 5; x = x + 3"""
+    evaluator = Evaluator()
+    r1 = evaluator.eval(VarDefStmt(names=("x",), expr=NumberNode(value=5)))
+    _log("x = 5", r1)
+    assert isinstance(r1, VarDefRes)
+    assert r1.old_values == {"x": None}
+    assert r1.new_value == 5
+
+    expr = BinaryOpNode(op=tktype.PLUS, left=VarNode(name="x"), right=NumberNode(value=3))
+    r2 = evaluator.eval(VarDefStmt(names=("x",), expr=expr))
+    _log("x = x + 3", r2)
+    assert isinstance(r2, VarDefRes)
+    assert r2.old_values == {"x": 5}
+    assert r2.new_value == 8
+
+
+def test_vardef_use_var_in_expr():
+    """x = 5; x + 3"""
+    evaluator = Evaluator()
+    evaluator.eval(VarDefStmt(names=("x",), expr=NumberNode(value=5)))
+    stmt = ExprStmt(value=BinaryOpNode(op=tktype.PLUS, left=VarNode(name="x"), right=NumberNode(value=3)))
+    result = evaluator.eval(stmt)
+    _log("x = 5; x + 3", result)
+    assert isinstance(result, ExprRes)
+    assert result.value == 8
+
+
+def test_vardef_multi_names():
+    """a, b = 10"""
+    stmt = VarDefStmt(names=("a", "b"), expr=NumberNode(value=10))
+    result = Evaluator().eval(stmt)
+    _log("a, b = 10", result)
+    assert isinstance(result, VarDefRes)
+    assert result.names == ("a", "b")
+    assert result.old_values == {"a": None, "b": None}
+    assert result.new_value == 10
+
+
+def test_vardef_undefined_variable():
+    """y = z + 1（z 未定义）"""
+    expr = BinaryOpNode(op=tktype.PLUS, left=VarNode(name="z"), right=NumberNode(value=1))
+    stmt = VarDefStmt(names=("y",), expr=expr)
+    result = Evaluator().eval(stmt)
+    _log("y = z + 1 (z 未定义)", result)
+    assert isinstance(result, ErrorRes)

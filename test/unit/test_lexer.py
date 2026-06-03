@@ -138,7 +138,10 @@ def _log(source: str, result: list[Token] | DiceLangError) -> None:
                 (tktype.NUMBER, 2),
             ],
         ),
-        ("1;2；3", [(tktype.NUMBER, 1), (tktype.SEMICOLON, ";"), (tktype.NUMBER, 2), (tktype.SEMICOLON, ";"), (tktype.NUMBER, 3)]),
+        (
+            "1;2；3",
+            [(tktype.NUMBER, 1), (tktype.SEMICOLON, ";"), (tktype.NUMBER, 2), (tktype.SEMICOLON, ";"), (tktype.NUMBER, 3)],
+        ),
         ("1，2, 3", [(tktype.NUMBER, 1), (tktype.COMMA, ","), (tktype.NUMBER, 2), (tktype.COMMA, ","), (tktype.NUMBER, 3)]),
         ("&x = 5", [(tktype.MACRO, "&"), (tktype.IDENTIFIER, "x"), (tktype.ASSIGN, "="), (tktype.NUMBER, 5)]),
     ],
