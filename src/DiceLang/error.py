@@ -6,14 +6,16 @@ class DiceLangError(Exception):
     """DiceLang 相关错误的基类。
 
     标准化属性（所有子类必须提供）：
-    - pos: int | None   错误在源文本中的起始位置
-    - text: str | None  错误对应的源文本片段（Parser/Lexer 提供，Evaluator 可能为 None）
+    - pos: int | None     错误在源文本中的起始位置
+    - length: int | None  错误片段长度（renderer 用 source[pos:pos+length] 切片标红）
     """
+    pos: int | None
+    length: int | None
 
     def __init__(self, message: str = "", **kwargs):
         super().__init__(message)
-        self.pos: int | None = kwargs.pop("pos", None)
-        self.text: str | None = kwargs.pop("text", None)
+        self.pos = kwargs.pop("pos", None)
+        self.length = kwargs.pop("length", None)
         self._extra: dict[str, object] = kwargs
 
     def _extra_info(self) -> dict[str, str]:
@@ -31,19 +33,19 @@ class DiceLangError(Exception):
 class LexerError(DiceLangError):
     """用于表示词法分析阶段的错误。"""
 
-    def __init__(self, message, text=None, pos=None, **kwargs):
-        super().__init__(message, pos=pos, text=text, **kwargs)
+    def __init__(self, message, pos=None, length=None, **kwargs):
+        super().__init__(message, pos=pos, length=length, **kwargs)
 
 
 class ParserError(DiceLangError):
     """用于表示语法分析阶段的错误。"""
 
-    def __init__(self, message: str = "", token: Token | None = None, pos=None, tokens=None, **kwargs):
+    def __init__(self, message: str = "", token: Token | None = None, pos=None, length=None, tokens=None, **kwargs):
         self.token = token
         self.pos = pos if pos is not None else (token.pos if token else None)
+        self.length = length if length is not None else (len(token.text) if token else None)
         self.tokens = tokens
-        text = token.text if token else None
-        super().__init__(message, pos=self.pos, text=text, token=token, tokens=tokens, **kwargs)
+        super().__init__(message, pos=self.pos, length=self.length, token=token, tokens=tokens, **kwargs)
 
 
 class EvaluatorError(DiceLangError):
@@ -54,7 +56,7 @@ class EvaluatorError(DiceLangError):
         super().__init__(
             message,
             pos=ast_tree.pos if ast_tree else None,
-            text=None,
+            length=ast_tree.length if ast_tree else None,
             ast_tree=ast_tree,
             **kwargs,
         )

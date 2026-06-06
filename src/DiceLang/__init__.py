@@ -3,4 +3,4 @@
 from .evaluator import Evaluator
 from .error import DiceLangError, EvaluatorError, LexerError, ParserError
 from .interpreter import Interpreter
-from .result import ErrorRes, ExprRes, MacroDefRes, Result, VarDefRes
+from .result import ErrorRes, ExprRes, MacroDefRes, Result, VarDefRes, VarInfo

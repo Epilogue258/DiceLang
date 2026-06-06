@@ -64,7 +64,7 @@ class TokenType(StrEnum):
     MINUS_ASSIGN = "-="
     MULTIPLY_ASSIGN = "*="
     DIVIDE_ASSIGN = "/="
-    POW_ASSIGN = "**"
+    POW_ASSIGN = "^="
     MOD_ASSIGN = "%="
 
     EOF = "EOF"

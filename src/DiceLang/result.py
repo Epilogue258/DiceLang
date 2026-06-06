@@ -1,7 +1,15 @@
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, NamedTuple
 
 from .error import DiceLangError
+
+
+class VarInfo(NamedTuple):
+    """单个变量的赋值信息。"""
+    name: str
+    old: int | None  # None = 首次定义
+    new: int          # 本次赋的值
+    value: int        # 赋值后的当前值（简单赋值时 = new）
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -28,18 +36,15 @@ class ExprRes(Result):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class VarDefRes(Result):
-    names: tuple[str, ...]
-    old_values: dict[str, int | None]  # None = 首次定义
-    new_value: int
+    vars: tuple[VarInfo, ...]
 
     def __str__(self):
         parts = []
-        for name in self.names:
-            old = self.old_values[name]
-            if old is None:
-                parts.append(f"{name}: {self.new_value}")
+        for v in self.vars:
+            if v.old is None:
+                parts.append(f"{v.name}: {v.new}")
             else:
-                parts.append(f"{name}: {old} -> {self.new_value}")
+                parts.append(f"{v.name}: {v.old} -> {v.new}")
         return "\n".join(parts)
 
 

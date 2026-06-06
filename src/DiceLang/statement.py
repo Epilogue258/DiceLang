@@ -3,6 +3,7 @@ from typing import Any
 
 from .astnode import AstNode
 from .error import DiceLangError, TodoError
+from .tokens import TokenType
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -19,6 +20,7 @@ class ExprStmt(Statement):
 class VarDefStmt(Statement):
     names: tuple[str, ...]
     expr: AstNode
+    op: TokenType = TokenType.ASSIGN
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

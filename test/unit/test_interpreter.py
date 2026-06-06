@@ -12,7 +12,7 @@ import pytest
 
 from DiceLang.error import DiceLangError, TodoError
 from DiceLang.interpreter import Interpreter
-from DiceLang.result import ErrorRes, ExprRes, MacroDefRes, Result, VarDefRes
+from DiceLang.result import ErrorRes, ExprRes, MacroDefRes, Result, VarDefRes, VarInfo
 
 RNG = random.Random(42)
 
@@ -165,11 +165,14 @@ def test_dice_deterministic():
 # ============================================================
 
 
-@pytest.mark.xfail(reason="VarDef 尚未实现", strict=True, raises=TodoError)
-def test_vardef_unimplemented():
-    """变量定义语句（预留，待实现）"""
+def test_vardef():
+    """x = 5 → VarDefRes"""
     [res] = results("x = 5")
+    _log("x = 5", res)
     assert isinstance(res, VarDefRes)
+    assert res.vars[0].name == "x"
+    assert res.vars[0].old is None
+    assert res.vars[0].new == 5
 
 
 @pytest.mark.xfail(reason="Parser 尚未实现宏定义，& 被当作语法错误", strict=True)

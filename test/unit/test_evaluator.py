@@ -5,7 +5,7 @@ import pytest
 from DiceLang.astnode import AstNode, BinaryOpNode, NumberNode, UnaryOpNode, VarNode
 from DiceLang.error import DiceLangError, TodoError
 from DiceLang.evaluator import Evaluator
-from DiceLang.result import ErrorRes, ExprRes, VarDefRes
+from DiceLang.result import ErrorRes, ExprRes, VarDefRes, VarInfo
 from DiceLang.tokens import TokenType as tktype
 from DiceLang.statement import ExprStmt, VarDefStmt
 
@@ -159,9 +159,7 @@ def test_vardef_simple():
     result = Evaluator().eval(stmt)
     _log("x = 5", result)
     assert isinstance(result, VarDefRes)
-    assert result.names == ("x",)
-    assert result.old_values == {"x": None}
-    assert result.new_value == 5
+    assert result.vars == (VarInfo(name="x", old=None, new=5, value=5),)
 
 
 def test_vardef_expression():
@@ -171,7 +169,7 @@ def test_vardef_expression():
     result = Evaluator().eval(stmt)
     _log("x = 2 + 3", result)
     assert isinstance(result, VarDefRes)
-    assert result.new_value == 5
+    assert result.vars[0].new == 5
 
 
 def test_vardef_reassign():
@@ -180,15 +178,13 @@ def test_vardef_reassign():
     r1 = evaluator.eval(VarDefStmt(names=("x",), expr=NumberNode(value=5)))
     _log("x = 5", r1)
     assert isinstance(r1, VarDefRes)
-    assert r1.old_values == {"x": None}
-    assert r1.new_value == 5
+    assert r1.vars == (VarInfo(name="x", old=None, new=5, value=5),)
 
     expr = BinaryOpNode(op=tktype.PLUS, left=VarNode(name="x"), right=NumberNode(value=3))
     r2 = evaluator.eval(VarDefStmt(names=("x",), expr=expr))
     _log("x = x + 3", r2)
     assert isinstance(r2, VarDefRes)
-    assert r2.old_values == {"x": 5}
-    assert r2.new_value == 8
+    assert r2.vars == (VarInfo(name="x", old=5, new=8, value=8),)
 
 
 def test_vardef_use_var_in_expr():
@@ -208,9 +204,10 @@ def test_vardef_multi_names():
     result = Evaluator().eval(stmt)
     _log("a, b = 10", result)
     assert isinstance(result, VarDefRes)
-    assert result.names == ("a", "b")
-    assert result.old_values == {"a": None, "b": None}
-    assert result.new_value == 10
+    assert result.vars == (
+        VarInfo(name="a", old=None, new=10, value=10),
+        VarInfo(name="b", old=None, new=10, value=10),
+    )
 
 
 def test_vardef_undefined_variable():
@@ -219,4 +216,35 @@ def test_vardef_undefined_variable():
     stmt = VarDefStmt(names=("y",), expr=expr)
     result = Evaluator().eval(stmt)
     _log("y = z + 1 (z 未定义)", result)
+    assert isinstance(result, ErrorRes)
+
+
+def test_compound_assign():
+    """x = 5; x += 3 → old=5, new=3, value=8"""
+    evaluator = Evaluator()
+    evaluator.eval(VarDefStmt(names=("x",), expr=NumberNode(value=5)))
+    stmt = VarDefStmt(names=("x",), expr=NumberNode(value=3), op=tktype.PLUS_ASSIGN)
+    result = evaluator.eval(stmt)
+    _log("x += 3", result)
+    assert isinstance(result, VarDefRes)
+    assert result.vars[0].old == 5
+    assert result.vars[0].new == 3
+    assert result.vars[0].value == 8
+
+
+def test_compound_divide_by_zero():
+    """x = 5; x /= 0 → ErrorRes"""
+    evaluator = Evaluator()
+    evaluator.eval(VarDefStmt(names=("x",), expr=NumberNode(value=5)))
+    stmt = VarDefStmt(names=("x",), expr=NumberNode(value=0), op=tktype.DIVIDE_ASSIGN)
+    result = evaluator.eval(stmt)
+    _log("x /= 0", result)
+    assert isinstance(result, ErrorRes)
+
+
+def test_compound_undefined():
+    """x += 5（x 未定义）→ ErrorRes"""
+    stmt = VarDefStmt(names=("x",), expr=NumberNode(value=5), op=tktype.PLUS_ASSIGN)
+    result = Evaluator().eval(stmt)
+    _log("x += 5 (x 未定义)", result)
     assert isinstance(result, ErrorRes)

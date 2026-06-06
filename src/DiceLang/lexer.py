@@ -40,7 +40,7 @@ class Lexer:  # 词法分析器：输入字符串，输出 Token 流。
                 tokens.append(Token(SYMBOL_TO_TYPE[symbol], _standardize_symbol(symbol), symbol, index))
                 index = end_pos
             else:
-                raise LexerError(f"未知的字符: {ch} 位于索引{index}部分")
+                raise LexerError(f"未知的字符: {ch}", pos=index, length=1)
         # while index < len(text): ends
         tokens.append(Token(TokenType.EOF, None, "EOF: 抵达文件末尾", -1))
         return tokens

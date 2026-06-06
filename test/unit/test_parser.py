@@ -11,7 +11,7 @@ from DiceLang.astnode import (
 from DiceLang.error import DiceLangError, ParserError, TodoError
 from DiceLang.lexer import Lexer
 from DiceLang.parser import Parser
-from DiceLang.statement import ErrorStmt, ExprStmt
+from DiceLang.statement import ErrorStmt, ExprStmt, Statement, VarDefStmt
 from DiceLang.tokens import Token, TokenType
 
 
@@ -242,6 +242,63 @@ def test_unimplemented_features(source):
         raise result
     else:
         raise AssertionError(f"期望 TodoError, 得到 {type(result).__name__}: {result}")
+
+
+# ============================================================
+# VarDef 解析
+# ============================================================
+
+
+def parse_stmt(source: str) -> Statement:
+    return Parser(Lexer.tokenize(source)).parse()
+
+
+def parse_stmt_or_error(source: str) -> Statement | DiceLangError:
+    try:
+        return parse_stmt(source)
+    except DiceLangError as e:
+        return e
+
+
+@pytest.mark.parametrize(
+    ("source", "names", "expected"),
+    [
+        # 合法 VarDef
+        ("x = 5", ("x",), "vardef"),
+        ("foo, bar, baz = 3d6", ("foo", "bar", "baz"), "vardef"),
+        ("x = 2 + 3 * 4", ("x",), "vardef"),
+        ("x, y, = 5", ("x", "y"), "vardef"),  # 尾随逗号 OK
+        # 复合赋值
+        ("x += 5", ("x",), "vardef"),
+        ("x -= 3", ("x",), "vardef"),
+        ("x *= 2", ("x",), "vardef"),
+        ("x /= 2", ("x",), "vardef"),
+        ("x %= 3", ("x",), "vardef"),
+        ("x ^= 2", ("x",), "vardef"),
+        # 表达式（非 VarDef）
+        ("x + y + z", (), "expr"),
+        ("x", (), "expr"),
+        # 错误：无变量名
+        ("= 5", (), "error"),
+        # 错误：表达式当名字
+        ("x, y+1 = 5", (), "error"),
+        # 错误：链式赋值
+        ("x = y + 1 = z", (), "error"),
+    ],
+)
+def test_vardef_parsing(source, names, expected):
+    if expected == "error":
+        result = parse_stmt_or_error(source)
+    else:
+        result = parse_stmt(source)
+    _log(source, result)
+    if expected == "vardef":
+        assert isinstance(result, VarDefStmt)
+        assert result.names == names
+    elif expected == "expr":
+        assert not isinstance(result, (VarDefStmt, ErrorStmt))
+    else:
+        assert isinstance(result, (ErrorStmt, DiceLangError))
 
 
 # ============================================================
