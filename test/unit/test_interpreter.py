@@ -175,11 +175,36 @@ def test_vardef():
     assert res.vars[0].new == 5
 
 
-@pytest.mark.xfail(reason="Parser 尚未实现宏定义，& 被当作语法错误", strict=True)
-def test_macrodef_unimplemented():
-    """宏定义语句（预留，待 Parser 实现后填入）"""
+def test_macrodef():
+    """&foo = 2d6 → MacroDefRes"""
     [res] = results("&foo = 2d6")
+    _log("&foo = 2d6", res)
     assert isinstance(res, MacroDefRes)
+    assert res.names == ("foo",)
+    assert "2D6" in res.expr_str
+
+
+def test_macrodef_multi_names():
+    """&a, b = 1d6 → 两个宏同时定义"""
+    [res] = results("&a, b = 1d6")
+    _log("&a, b = 1d6", res)
+    assert isinstance(res, MacroDefRes)
+    assert res.names == ("a", "b")
+
+
+def test_macrodef_trailing_comma():
+    """&a, b, = expr（尾部逗号，合法）"""
+    [res] = results("&a, b, = 3d6")
+    _log("&a, b, = 3d6", res)
+    assert isinstance(res, MacroDefRes)
+    assert res.names == ("a", "b")
+
+
+def test_macrodef_multi_ampersand():
+    """&a, &b = expr（多个 &，语法错误）"""
+    [res] = results("&a, &b = 2d6")
+    _log("&a, &b = 2d6", res)
+    assert isinstance(res, ErrorRes)
 
 
 # ============================================================

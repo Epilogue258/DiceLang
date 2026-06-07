@@ -50,7 +50,12 @@ class VarDefRes(Result):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class MacroDefRes(Result):
-    pass
+    names: tuple[str, ...]
+    expr_str: str
+
+    def __str__(self):
+        names_str = ", ".join(self.names)
+        return f"&{names_str}: {self.expr_str}"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

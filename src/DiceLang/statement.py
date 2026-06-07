@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .astnode import AstNode
-from .error import DiceLangError, TodoError
+from .error import DiceLangError
 from .tokens import TokenType
 
 
@@ -25,8 +25,8 @@ class VarDefStmt(Statement):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class MacroDefStmt(Statement):
-    value: list[tuple[str, AstNode, bool]]  # name, value, is_def_succeess
-    # raise TodoError("MacroDefStmt 尚未实现")
+    names: tuple[str, ...]
+    expr: AstNode
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

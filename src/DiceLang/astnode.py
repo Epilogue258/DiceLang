@@ -196,6 +196,18 @@ class VarNode(AstNode):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class MacroRefNode(AstNode):
+    name: str
+
+    @property
+    def family(self) -> Family:
+        return Family.NONE
+
+    def __str__(self) -> str:
+        return f"&{self.name}"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class FuncCallNode(AstNode):  # TODO FUNCALL
     func: str
     args: GroupNode
