@@ -3,11 +3,19 @@ from typing import Self, cast  # cast可以用于收紧类型
 from .astnode import (
     AstNode,
     BinaryOpNode,
+    ConditionMod,
+    CountMod,
     DiceNode,
     FuncCallNode,
     GroupNode,
+    HighestMod,
+    KeepMod,
+    LowestMod,
     MacroRefNode,
+    MapMod,
+    ModifierNode,
     NumberNode,
+    ThrowMod,
     UnaryOpNode,
     VarNode,
 )  # TODO 确保应导尽导
@@ -16,18 +24,49 @@ from .statement import ErrorStmt, ExprStmt, MacroDefStmt, Statement, VarDefStmt
 from .tokens import Token, TokenType
 
 # 所有赋值操作符
-_ASSIGN_OPS = frozenset({
-    TokenType.ASSIGN,
-    TokenType.PLUS_ASSIGN,
-    TokenType.MINUS_ASSIGN,
-    TokenType.MULTIPLY_ASSIGN,
-    TokenType.DIVIDE_ASSIGN,
-    TokenType.MOD_ASSIGN,
-    TokenType.POW_ASSIGN,
-})
+_ASSIGN_OPS = frozenset(
+    {
+        TokenType.ASSIGN,
+        TokenType.PLUS_ASSIGN,
+        TokenType.MINUS_ASSIGN,
+        TokenType.MULTIPLY_ASSIGN,
+        TokenType.DIVIDE_ASSIGN,
+        TokenType.MOD_ASSIGN,
+        TokenType.POW_ASSIGN,
+    }
+)
+
+# if / ifc 的条件运算符集合
+_COND_TOKENS = frozenset(
+    {
+        TokenType.GT,
+        TokenType.LT,
+        TokenType.GTE,
+        TokenType.LTE,
+        TokenType.EQ,
+        TokenType.NEQ,
+    }
+)
+
+# 不能作为变量名的关键字
+_KEYWORDS = frozenset(
+    {
+        TokenType.HIGHEST,
+        TokenType.LOWEST,
+        TokenType.KEEP,
+        TokenType.THROW,
+        TokenType.IF,
+        TokenType.IFCOUNT,
+        TokenType.COUNT,
+        TokenType.DICE,
+        TokenType.EXPLODE,
+    }
+)
 
 
 class Parser:
+    BP_MAX = 999  # 选择器参数绑定力上限，阻止意外吃入后续 token
+
     def __init__(self, tokens: list[Token] | None = None):
         self.tokens = tokens if tokens is not None else []
         self.pos = 0
@@ -37,7 +76,7 @@ class Parser:
 
     @property
     def current(self) -> Token:
-        # 总是返回当前指针指向的 Token
+        """总是返回当前指针指向的 Token"""
         return self.tokens[self.pos]
 
     def peek(self, offset: int = 1) -> Token:
@@ -92,6 +131,7 @@ class Parser:
     def _scan_def_names(self) -> tuple[int, tuple[str, ...], TokenType] | None:
         """无副作用扫描 IDENTIFIER (, IDENTIFIER)* OP。
         成功返回 (消费数, 名字元组, 赋值操作符)，失败返回 None 且不移动 pos。
+        遇到关键字直接抛 ParserError。
         """
         offset = 0
         names: list[str] = []
@@ -104,6 +144,8 @@ class Parser:
                 offset += 1
             elif t.type in _ASSIGN_OPS and names:
                 return offset + 1, tuple(names), t.type
+            elif t.type in _KEYWORDS:
+                raise ParserError(f"{t.text} 是关键字，无法命名", token=t)
             else:
                 return None
 
@@ -168,11 +210,6 @@ class Parser:
                 if ident.type != TokenType.IDENTIFIER:
                     raise ParserError("宏引用必须跟随标识符", token=ident)
                 return MacroRefNode(name=ident.value)
-            case TokenType.MACRO:
-                ident = self.consume()
-                if ident.type != TokenType.IDENTIFIER:
-                    raise ParserError("宏引用必须跟随标识符", token=ident)
-                return MacroRefNode(name=ident.value)
             case TokenType.EOF:
                 raise ParserError("表达式不完整，意外到达文件结尾", token=token)
             case _:
@@ -188,6 +225,7 @@ class Parser:
                 return BinaryOpNode(op=op_token.type, left=left, right=right)
             case TokenType.DICE:
                 right = self.parse_expr(right_bp)
+                return DiceNode(count=left, sides=right, selectors=self._parse_selectors())
                 return DiceNode(count=left, sides=right, selectors=[])  # TODO selectors
             case TokenType.LPAREN:
                 raise ParserError(
@@ -266,6 +304,42 @@ class Parser:
 
         return group
 
+    def _parse_selectors(self) -> list[ModifierNode]:
+        """解析骰子后缀选择器链。"""
+        selectors: list[ModifierNode] = []
+        while True:
+            match self.current.type:
+                case TokenType.HIGHEST:
+                    self.consume()
+                    selectors.append(HighestMod(count=self.parse_expr(self.BP_MAX)))
+                case TokenType.LOWEST:
+                    self.consume()
+                    selectors.append(LowestMod(count=self.parse_expr(self.BP_MAX)))
+                case TokenType.KEEP:
+                    self.consume()
+                    selectors.append(KeepMod())
+                case TokenType.THROW:
+                    self.consume()
+                    selectors.append(ThrowMod())
+                case TokenType.IF | TokenType.IFCOUNT:
+                    op = self.consume()
+                    cond = self.consume()
+                    if cond.type not in _COND_TOKENS:
+                        raise ParserError(f"if 后应为比较运算符，得到 {cond.text}", token=cond)
+                    threshold = self.parse_expr(self.BP_MAX)
+                    selectors.append(ConditionMod(condition=cond.type, threshold=threshold))
+                    if self.current.type == TokenType.COLON:
+                        self.consume()
+                        selectors.append(MapMod(map_to=self.parse_expr(self.BP_MAX)))
+                    if op.type == TokenType.IFCOUNT:
+                        selectors.append(CountMod())
+                case TokenType.COUNT:
+                    self.consume()
+                    selectors.append(CountMod())
+                case _:
+                    break
+        return selectors
+
     # TODO DEL
     # def __str__(self):
     #     # 这其实没什么用，和Lexer做个语义对齐而已
@@ -288,7 +362,15 @@ infix_parselets: dict[TokenType, tuple[int, int]] = {
     TokenType.DIVIDE: (20, 21),
     TokenType.MOD: (20, 21),
     TokenType.POW: (31, 30),  # 右结合幂运算 2^3^4 -> 2^(3^4)
-    TokenType.DICE: (60, 61),  # 骰子是左结合的 2d6d8 -> (2d6)d8
+    TokenType.HIGHEST: (60, 61),
+    TokenType.LOWEST: (60, 61),
+    TokenType.KEEP: (60, 61),
+    TokenType.THROW: (60, 61),
+    TokenType.IF: (60, 61),
+    TokenType.IFCOUNT: (60, 61),
+    TokenType.COUNT: (60, 61),
+    TokenType.COLON: (60, 61),
+    TokenType.DICE: (70, 71),  # 骰子 bp 高于选择器，阻止选择器被骰子面数误吞
     TokenType.RPAREN: (0, 0),
     TokenType.COMMA: (0, 0),
     TokenType.EOF: (-1, -1),

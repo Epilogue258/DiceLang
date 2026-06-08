@@ -3,8 +3,13 @@ import pytest
 from DiceLang.astnode import (
     AstNode,
     BinaryOpNode,
+    ConditionMod,
+    CountMod,
     DiceNode,
     GroupNode,
+    HighestMod,
+    LowestMod,
+    MapMod,
     NumberNode,
     UnaryOpNode,
 )
@@ -221,6 +226,42 @@ def test_dice_in_expression():
     assert result.op == TokenType.PLUS
     assert isinstance(result.left, DiceNode)
     assert isinstance(result.right, NumberNode) and result.right.value == 3
+
+
+def test_dice_selectors_complex():
+    """10d6 h4 l4 ifc >= 3 : (2d6)"""
+    result = parse_or_error("10d6 h4 l4 ifc >= 3 : (2d6)")
+    _log("10d6 h4 l4 ifc >= 3 : (2d6)", result)
+    assert isinstance(result, DiceNode)
+    assert result.selectors[0] == HighestMod(count=NumberNode(value=4))
+    assert result.selectors[1] == LowestMod(count=NumberNode(value=4))
+    assert isinstance(result.selectors[2], ConditionMod)
+    assert result.selectors[2].condition == TokenType.GTE
+    assert result.selectors[2].threshold == NumberNode(value=3)
+    assert isinstance(result.selectors[3], MapMod)
+    assert isinstance(result.selectors[3].map_to, GroupNode)
+    assert isinstance(result.selectors[4], CountMod)
+
+
+def test_keyword_as_variable():
+    """h = 5 → 关键字不能作为变量名"""
+    result = parse_or_error("h = 5")
+    _log("h = 5", result)
+    assert isinstance(result, DiceLangError)
+
+
+def test_keyword_in_macro():
+    """&h = 5 → 关键字不能作为宏名"""
+    result = parse_or_error("&h = 5")
+    _log("&h = 5", result)
+    assert isinstance(result, DiceLangError)
+
+
+def test_selectors_in_arithmetic():
+    """1 + h2 + l3 + :4 → 语法错误"""
+    result = parse_or_error("1 + h2 + l3 + :4")
+    _log("1 + h2 + l3 + :4", result)
+    assert isinstance(result, DiceLangError)
 
 
 # ============================================================

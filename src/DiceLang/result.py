@@ -6,15 +6,18 @@ from .error import DiceLangError
 
 class VarInfo(NamedTuple):
     """单个变量的赋值信息。"""
+
     name: str
     old: int | None  # None = 首次定义
-    new: int          # 本次赋的值
-    value: int        # 赋值后的当前值（简单赋值时 = new）
+    new: int  # 本次赋的值
+    value: Any  # 赋值后的当前值（简单赋值时 = new）
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Result:
-    value: Any = None  # 子类按需重定义
+    value: Any = (
+        None  # 子类按需重定义，有时需type: ignore[reportGeneralTypeIssues]，虽然kw_only已经保证了调用，主要是检查器会警告。
+    )
 
     def __str__(self):
         return str(self.value) if self.value is not None else self.__class__.__name__
@@ -22,7 +25,7 @@ class Result:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ExprRes(Result):
-    value: int
+    value: int  # type: ignore[reportGeneralTypeIssues]
     steps: tuple[str, ...]
 
     def __iter__(self):
@@ -60,7 +63,7 @@ class MacroDefRes(Result):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ErrorRes(Result):
-    value: DiceLangError
+    value: DiceLangError  # type: ignore[reportGeneralTypeIssues]
 
     def __str__(self):
         return str(self.value)

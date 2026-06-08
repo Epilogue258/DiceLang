@@ -12,6 +12,7 @@ from .tokens import TokenType
 
 class Evaluator:
     """求值器：输入 Statement，输出 Result（包含中间化简过程）。"""
+
     def __init__(
         self, rng: random.Random | None = None, vars: dict[str, int] | None = None, macros: dict[str, AstNode] | None = None
     ):
@@ -116,10 +117,11 @@ class Evaluator:
 
     def eval_stmt(self, stmt: Statement) -> Result:
         """根据语句类型分发求值，返回对应的 Result。"""
+        node: AstNode
         match stmt:
             case ExprStmt(value=ast):
                 steps: list[str] = []
-                node: AstNode = ast
+                node = ast
                 while True:
                     steps.append(str(node))
                     if isinstance(node, NumberNode):
@@ -127,7 +129,7 @@ class Evaluator:
                     node = self.simplify(node)
                 return ExprRes(value=node.value, steps=tuple(steps))
             case VarDefStmt(names=names, expr=expr, op=op):
-                node: AstNode = expr
+                node = expr
                 while True:
                     if isinstance(node, NumberNode):
                         break
@@ -171,6 +173,8 @@ class Evaluator:
                 return MacroDefRes(names=names, expr_str=str(macro_expr))
             case ErrorStmt(value=err):
                 return ErrorRes(value=err)
+            case _:  # pragma: no cover
+                raise TodoError(f"不支持的语句类型: {stmt}", ast_tree=stmt)
 
     def eval(self, stmt: Statement) -> Result:
         """

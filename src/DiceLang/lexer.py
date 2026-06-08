@@ -60,7 +60,7 @@ IDENTIFIER_TO_TYPE: dict[str, TokenType] = {
     "k": TokenType.KEEP,
     "t": TokenType.THROW,
     "e": TokenType.EXPLODE,
-    "c": TokenType.COUNT,
+    "count": TokenType.COUNT,
     "if": TokenType.IF,
     "ifc": TokenType.IFCOUNT,
 }

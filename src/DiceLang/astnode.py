@@ -78,16 +78,77 @@ class NumberNode(AstNode):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class SelectorNode(AstNode):
-    selector: TokenType  # HIGHEST/LOWEST/KEEP/THROW
-    count: AstNode  # 选择数量
+class ModifierNode(AstNode):
+    """骰子后缀修饰器基类"""
+    pass
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HighestMod(ModifierNode):
+    """hN：标记最高的 N 个"""
+    count: AstNode
+
+    def __str__(self) -> str:
+        return f"h{self.count}"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class LowestMod(ModifierNode):
+    """lN：标记最低的 N 个"""
+    count: AstNode
+
+    def __str__(self) -> str:
+        return f"l{self.count}"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ConditionMod(ModifierNode):
+    """if cond N：标记满足条件的元素"""
+    condition: TokenType
+    threshold: AstNode
+
+    def __str__(self) -> str:
+        return f"if {self.condition} {self.threshold}"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class KeepMod(ModifierNode):
+    """k：保留标记元素，清除标记"""
+
+    def __str__(self) -> str:
+        return "k"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ThrowMod(ModifierNode):
+    """t：丢弃标记元素，清除标记"""
+
+    def __str__(self) -> str:
+        return "t"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CountMod(ModifierNode):
+    """count：统计标记元素个数（而非求和）"""
+
+    def __str__(self) -> str:
+        return "count"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MapMod(ModifierNode):
+    """if N:M 中的 :M 部分，将标记元素值改为 M"""
+    map_to: AstNode
+
+    def __str__(self) -> str:
+        return f": {self.map_to}"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class DiceNode(AstNode):
     count: AstNode
     sides: AstNode
-    selectors: list[SelectorNode]  # 有序的选择器链
+    selectors: list[ModifierNode]  # 有序的选择器链
 
     @property
     def family(self) -> Family:
@@ -100,7 +161,7 @@ class DiceNode(AstNode):
 @dataclass(frozen=True, slots=True, kw_only=True)
 class DiceResNode(AstNode):
     rolls: list[int]
-    selectors: list[SelectorNode]
+    selectors: list[ModifierNode]
 
     @property
     def family(self) -> Family:
