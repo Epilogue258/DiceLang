@@ -2,15 +2,21 @@ import random
 
 import pytest
 
-from DiceLang.astnode import AstNode, BinaryOpNode, NumberNode, UnaryOpNode, VarNode
+from DiceLang.astnode import AstNode, BinaryOpNode, FuncCallNode, GroupNode, NumberNode, UnaryOpNode, VarNode
 from DiceLang.error import DiceLangError, TodoError
 from DiceLang.evaluator import Evaluator
 from DiceLang.result import ErrorRes, ExprRes, VarDefRes, VarInfo
-from DiceLang.tokens import TokenType as tktype
 from DiceLang.statement import ExprStmt, VarDefStmt
+from DiceLang.tokens import TokenType as tktype
 
 RNG = random.Random(42)  # 固定随机种子, 以便复现
-_P = 0  # 测试用占位 pos/length
+
+
+def N(cls, **kwargs):
+    """构造 AST 节点，自动填充 pos=0, length=0。"""
+    kwargs.setdefault("pos", 0)
+    kwargs.setdefault("length", 0)
+    return cls(**kwargs)
 
 
 # --- 辅助函数 ---
@@ -23,9 +29,9 @@ class _Color:
 
 
 def eval_final(node: AstNode) -> int | DiceLangError:
-    """求值并返回最终整数结果，捕获错误。"""
+    """求值并返回最终整数结果，捕获错误。每次使用独立 RNG。"""
     try:
-        result = Evaluator(rng=RNG).eval(ExprStmt(value=node))
+        result = Evaluator(rng=random.Random(42)).eval(ExprStmt(value=node))
         if isinstance(result, ErrorRes):
             return result.value
         assert isinstance(result, ExprRes)
@@ -37,8 +43,10 @@ def eval_final(node: AstNode) -> int | DiceLangError:
 def _log(desc: str, result) -> None:
     is_err = isinstance(result, (DiceLangError, ErrorRes))
     tag = f"{_Color.RED}{_Color.BOLD}Error{_Color.RESET}" if is_err else f"{_Color.GREEN}OK{_Color.RESET}"
-    raw = f"{_Color.YELLOW}{result.value}{_Color.RESET}" if isinstance(result, ErrorRes) else (
-        f"{_Color.YELLOW}{result}{_Color.RESET}" if is_err else str(result)
+    raw = (
+        f"{_Color.YELLOW}{result.value}{_Color.RESET}"
+        if isinstance(result, ErrorRes)
+        else (f"{_Color.YELLOW}{result}{_Color.RESET}" if is_err else str(result))
     )
     indented = raw.replace("\n", "\n  ")
     print(f"\n  case={desc!r}  [{tag}]\n  {indented}")
@@ -51,11 +59,11 @@ def _log(desc: str, result) -> None:
 
 def test_arithmetic_complex():
     """测试算术表达式 (1+1+1)*(1+1)+(1+1) = 8"""
-    num1 = NumberNode(value=1, pos=_P, length=_P)
-    plus1_1 = BinaryOpNode(op=tktype.PLUS, left=num1, right=num1, pos=_P, length=_P)
-    plus1_1_1 = BinaryOpNode(op=tktype.PLUS, left=plus1_1, right=num1, pos=_P, length=_P)
-    mult = BinaryOpNode(op=tktype.MULTIPLY, left=plus1_1_1, right=plus1_1, pos=_P, length=_P)
-    expr = BinaryOpNode(op=tktype.PLUS, left=mult, right=plus1_1, pos=_P, length=_P)
+    num1 = N(NumberNode, value=1)
+    plus1_1 = N(BinaryOpNode, op=tktype.PLUS, left=num1, right=num1)
+    plus1_1_1 = N(BinaryOpNode, op=tktype.PLUS, left=plus1_1, right=num1)
+    mult = N(BinaryOpNode, op=tktype.MULTIPLY, left=plus1_1_1, right=plus1_1)
+    expr = N(BinaryOpNode, op=tktype.PLUS, left=mult, right=plus1_1)
 
     result = eval_final(expr)
     _log("(1+1+1)*(1+1)+(1+1)", result)
@@ -109,8 +117,8 @@ def test_arithmetic_exprs(expr: str, expected: int):
 def test_power_right_associative():
     """2^3^2 = 2^(3^2) = 2^9 = 512"""
     # 手写: 2^(3^2)
-    inner = BinaryOpNode(op=tktype.POW, left=NumberNode(value=3, pos=_P, length=_P), right=NumberNode(value=2, pos=_P, length=_P))
-    expr = BinaryOpNode(op=tktype.POW, left=NumberNode(value=2, pos=_P, length=_P), right=inner, pos=_P, length=_P)
+    inner = N(BinaryOpNode, op=tktype.POW, left=N(NumberNode, value=3), right=N(NumberNode, value=2))
+    expr = N(BinaryOpNode, op=tktype.POW, left=N(NumberNode, value=2), right=inner)
 
     result = eval_final(expr)
     _log("2^3^2", result)
@@ -124,7 +132,7 @@ def test_power_right_associative():
 
 
 def test_unary_minus_number():
-    node = UnaryOpNode(op=tktype.MINUS, operand=NumberNode(value=42, pos=_P, length=_P), pos=_P, length=_P)
+    node = N(UnaryOpNode, op=tktype.MINUS, operand=N(NumberNode, value=42))
     result = eval_final(node)
     _log("-42", result)
     assert not isinstance(result, DiceLangError)
@@ -132,7 +140,7 @@ def test_unary_minus_number():
 
 
 def test_unary_plus_number():
-    node = UnaryOpNode(op=tktype.PLUS, operand=NumberNode(value=7, pos=_P, length=_P), pos=_P, length=_P)
+    node = N(UnaryOpNode, op=tktype.PLUS, operand=N(NumberNode, value=7))
     result = eval_final(node)
     _log("+7", result)
     assert not isinstance(result, DiceLangError)
@@ -156,7 +164,7 @@ def test_fuzzing_eval():
 
 def test_vardef_simple():
     """x = 5"""
-    stmt = VarDefStmt(names=("x",), expr=NumberNode(value=5, pos=_P, length=_P))
+    stmt = VarDefStmt(names=("x",), expr=N(NumberNode, value=5))
     result = Evaluator().eval(stmt)
     _log("x = 5", result)
     assert isinstance(result, VarDefRes)
@@ -165,7 +173,7 @@ def test_vardef_simple():
 
 def test_vardef_expression():
     """x = 2 + 3"""
-    expr = BinaryOpNode(op=tktype.PLUS, left=NumberNode(value=2, pos=_P, length=_P), right=NumberNode(value=3, pos=_P, length=_P))
+    expr = BinaryOpNode(op=tktype.PLUS, left=N(NumberNode, value=2), right=N(NumberNode, value=3))
     stmt = VarDefStmt(names=("x",), expr=expr)
     result = Evaluator().eval(stmt)
     _log("x = 2 + 3", result)
@@ -176,12 +184,12 @@ def test_vardef_expression():
 def test_vardef_reassign():
     """x = 5; x = x + 3"""
     evaluator = Evaluator()
-    r1 = evaluator.eval(VarDefStmt(names=("x",), expr=NumberNode(value=5, pos=_P, length=_P)))
+    r1 = evaluator.eval(VarDefStmt(names=("x",), expr=N(NumberNode, value=5)))
     _log("x = 5", r1)
     assert isinstance(r1, VarDefRes)
     assert r1.vars == (VarInfo(name="x", old=None, value=5),)
 
-    expr = BinaryOpNode(op=tktype.PLUS, left=VarNode(name="x", pos=_P, length=_P), right=NumberNode(value=3, pos=_P, length=_P))
+    expr = N(BinaryOpNode, op=tktype.PLUS, left=N(VarNode, name="x"), right=N(NumberNode, value=3))
     r2 = evaluator.eval(VarDefStmt(names=("x",), expr=expr))
     _log("x = x + 3", r2)
     assert isinstance(r2, VarDefRes)
@@ -191,8 +199,8 @@ def test_vardef_reassign():
 def test_vardef_use_var_in_expr():
     """x = 5; x + 3"""
     evaluator = Evaluator()
-    evaluator.eval(VarDefStmt(names=("x",), expr=NumberNode(value=5, pos=_P, length=_P)))
-    stmt = ExprStmt(value=BinaryOpNode(op=tktype.PLUS, left=VarNode(name="x", pos=_P, length=_P), right=NumberNode(value=3, pos=_P, length=_P)))
+    evaluator.eval(VarDefStmt(names=("x",), expr=N(NumberNode, value=5)))
+    stmt = ExprStmt(value=N(BinaryOpNode, op=tktype.PLUS, left=N(VarNode, name="x"), right=N(NumberNode, value=3)))
     result = evaluator.eval(stmt)
     _log("x = 5; x + 3", result)
     assert isinstance(result, ExprRes)
@@ -201,7 +209,7 @@ def test_vardef_use_var_in_expr():
 
 def test_vardef_multi_names():
     """a, b = 10"""
-    stmt = VarDefStmt(names=("a", "b"), expr=NumberNode(value=10, pos=_P, length=_P))
+    stmt = VarDefStmt(names=("a", "b"), expr=N(NumberNode, value=10))
     result = Evaluator().eval(stmt)
     _log("a, b = 10", result)
     assert isinstance(result, VarDefRes)
@@ -213,7 +221,7 @@ def test_vardef_multi_names():
 
 def test_vardef_undefined_variable():
     """y = z + 1（z 未定义）"""
-    expr = BinaryOpNode(op=tktype.PLUS, left=VarNode(name="z", pos=_P, length=_P), right=NumberNode(value=1, pos=_P, length=_P))
+    expr = N(BinaryOpNode, op=tktype.PLUS, left=N(VarNode, name="z"), right=N(NumberNode, value=1))
     stmt = VarDefStmt(names=("y",), expr=expr)
     result = Evaluator().eval(stmt)
     _log("y = z + 1 (z 未定义)", result)
@@ -223,8 +231,8 @@ def test_vardef_undefined_variable():
 def test_compound_assign():
     """x = 5; x += 3 → old=5, value=8"""
     evaluator = Evaluator()
-    evaluator.eval(VarDefStmt(names=("x",), expr=NumberNode(value=5, pos=_P, length=_P)))
-    stmt = VarDefStmt(names=("x",), expr=NumberNode(value=3, pos=_P, length=_P), op=tktype.PLUS_ASSIGN)
+    evaluator.eval(VarDefStmt(names=("x",), expr=N(NumberNode, value=5)))
+    stmt = VarDefStmt(names=("x",), expr=N(NumberNode, value=3), op=tktype.PLUS_ASSIGN)
     result = evaluator.eval(stmt)
     _log("x += 3", result)
     assert isinstance(result, VarDefRes)
@@ -235,8 +243,8 @@ def test_compound_assign():
 def test_compound_divide_by_zero():
     """x = 5; x /= 0 → ErrorRes"""
     evaluator = Evaluator()
-    evaluator.eval(VarDefStmt(names=("x",), expr=NumberNode(value=5, pos=_P, length=_P)))
-    stmt = VarDefStmt(names=("x",), expr=NumberNode(value=0, pos=_P, length=_P), op=tktype.DIVIDE_ASSIGN)
+    evaluator.eval(VarDefStmt(names=("x",), expr=N(NumberNode, value=5)))
+    stmt = VarDefStmt(names=("x",), expr=N(NumberNode, value=0), op=tktype.DIVIDE_ASSIGN)
     result = evaluator.eval(stmt)
     _log("x /= 0", result)
     assert isinstance(result, ErrorRes)
@@ -244,7 +252,157 @@ def test_compound_divide_by_zero():
 
 def test_compound_undefined():
     """x += 5（x 未定义）→ ErrorRes"""
-    stmt = VarDefStmt(names=("x",), expr=NumberNode(value=5, pos=_P, length=_P), op=tktype.PLUS_ASSIGN)
+    stmt = VarDefStmt(names=("x",), expr=N(NumberNode, value=5), op=tktype.PLUS_ASSIGN)
     result = Evaluator().eval(stmt)
     _log("x += 5 (x 未定义)", result)
     assert isinstance(result, ErrorRes)
+
+
+# ============================================================
+# FuncCall（max / min）
+# ============================================================
+
+
+def test_func_max_basic():
+    """max(1, 2, 3) → 3"""
+    result = eval_final(N(FuncCallNode, func="max", args=GroupNode(group=[
+        N(NumberNode, value=1), N(NumberNode, value=2), N(NumberNode, value=3),
+    ])))
+    _log("max(1,2,3)", result)
+    assert not isinstance(result, DiceLangError)
+    assert result == 3
+
+
+def test_func_min_basic():
+    """min(5, 2, 8) → 2"""
+    result = eval_final(N(FuncCallNode, func="min", args=GroupNode(group=[
+        N(NumberNode, value=5), N(NumberNode, value=2), N(NumberNode, value=8),
+    ])))
+    _log("min(5,2,8)", result)
+    assert not isinstance(result, DiceLangError)
+    assert result == 2
+
+
+def test_func_max_with_arithmetic():
+    """max(2+3, 3*4) → max(5, 12) → 12"""
+    from DiceLang.lexer import Lexer
+    from DiceLang.parser import Parser
+
+    stmt = Parser(Lexer.tokenize("max(2+3, 3*4)")).parse()
+    result = eval_final(stmt.value)
+    _log("max(2+3, 3*4)", result)
+    assert not isinstance(result, DiceLangError)
+    assert result == 12
+
+
+def test_func_nested():
+    """max(max(1,2), min(5,3)) → max(2, 3) → 3"""
+    from DiceLang.lexer import Lexer
+    from DiceLang.parser import Parser
+
+    stmt = Parser(Lexer.tokenize("max(max(1,2), min(5,3))")).parse()
+    result = eval_final(stmt.value)
+    _log("max(max(1,2), min(5,3))", result)
+    assert not isinstance(result, DiceLangError)
+    assert result == 3
+
+
+def test_func_max_with_dice():
+    """max(2d6, 3d6) → max([6,1], [6,3,1]) → max(7, 10) → 10"""
+    from DiceLang.lexer import Lexer
+    from DiceLang.parser import Parser
+
+    stmt = Parser(Lexer.tokenize("max(2d6, 3d6)")).parse()
+    result = eval_final(stmt.value)
+    _log("max(2d6, 3d6)", result)
+    assert not isinstance(result, DiceLangError)
+    assert result == 10
+
+
+@pytest.mark.xfail(reason="lexer 将 dmax 视为单 token，未拆分为 DICE + IDENTIFIER", strict=True)
+def test_func_dice_with_func_sides():
+    """1dmax(4,6) → 词法粘连，xfail"""
+    from DiceLang.lexer import Lexer
+    from DiceLang.parser import Parser
+    from DiceLang.statement import ErrorStmt
+
+    stmt = Parser(Lexer.tokenize("1dmax(4,6)")).parse()
+    if isinstance(stmt, ErrorStmt):
+        raise stmt.value  # strict xfail 要求抛异常
+
+
+@pytest.mark.xfail(reason="lexer 将 dmin 视为单 token，未拆分为 DICE + IDENTIFIER", strict=True)
+def test_func_dice_with_func_count_and_sides_nospace():
+    """max(2,3)dmin(4,6) → 词法粘连，xfail"""
+    from DiceLang.lexer import Lexer
+    from DiceLang.parser import Parser
+    from DiceLang.statement import ErrorStmt
+
+    stmt = Parser(Lexer.tokenize("max(2,3)dmin(4,6)")).parse()
+    if isinstance(stmt, ErrorStmt):
+        raise stmt.value
+
+
+# ============================================================
+# FuncCall + Dice（空格/括号断开粘连的版本）
+# ============================================================
+
+
+def test_func_dice_with_func_sides_spaced():
+    """1 d max(4,6) → 1d6 → 6"""
+    from DiceLang.lexer import Lexer
+    from DiceLang.parser import Parser
+
+    stmt = Parser(Lexer.tokenize("1 d max(4,6)")).parse()
+    result = eval_final(stmt.value)
+    _log("1 d max(4,6)", result)
+    assert not isinstance(result, DiceLangError)
+    assert result == 6
+
+
+def test_func_dice_with_func_count_and_sides_spaced():
+    """max(2,3) d min(4,6) → 3d4 → 5"""
+    from DiceLang.lexer import Lexer
+    from DiceLang.parser import Parser
+
+    stmt = Parser(Lexer.tokenize("max(2,3) d min(4,6)")).parse()
+    result = eval_final(stmt.value)
+    _log("max(2,3) d min(4,6)", result)
+    assert not isinstance(result, DiceLangError)
+    assert result == 5
+
+
+def test_func_dice_with_func_parens():
+    """(max(4,6))d(min(2,3)) → 6d3 → 7（)d( 自然断开粘连）"""
+    from DiceLang.lexer import Lexer
+    from DiceLang.parser import Parser
+
+    stmt = Parser(Lexer.tokenize("(max(4,6))d(min(2,3))")).parse()
+    result = eval_final(stmt.value)
+    _log("(max(4,6))d(min(2,3))", result)
+    assert not isinstance(result, DiceLangError)
+    assert result == 7
+
+
+def test_func_dice_with_func_parens_spaced():
+    """(max(4,6)) d (min(2,3)) → 6d3 → 7"""
+    from DiceLang.lexer import Lexer
+    from DiceLang.parser import Parser
+
+    stmt = Parser(Lexer.tokenize("(max(4,6)) d (min(2,3))")).parse()
+    result = eval_final(stmt.value)
+    _log("(max(4,6)) d (min(2,3))", result)
+    assert not isinstance(result, DiceLangError)
+    assert result == 7
+
+
+def test_func_dice_with_func_swapped_spaced():
+    """max(4,6) d min(2,3) → 6d3 → 7"""
+    from DiceLang.lexer import Lexer
+    from DiceLang.parser import Parser
+
+    stmt = Parser(Lexer.tokenize("max(4,6) d min(2,3)")).parse()
+    result = eval_final(stmt.value)
+    _log("max(4,6) d min(2,3)", result)
+    assert not isinstance(result, DiceLangError)
+    assert result == 7

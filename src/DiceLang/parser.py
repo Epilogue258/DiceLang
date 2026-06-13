@@ -72,7 +72,7 @@ class Parser:
         self.pos = 0
 
         if self.tokens and self.tokens[-1].type != TokenType.EOF:
-            raise ParserError("Token流必须以EOF结尾", token=self.tokens and self.tokens[-1])
+            raise ParserError("Token流必须以EOF结尾", token=self.tokens[-1] if self.tokens else None)
 
     @property
     def current(self) -> Token:
@@ -219,7 +219,9 @@ class Parser:
                 return BinaryOpNode(op=op_token.type, left=left, right=right, pos=op_token.pos, length=len(op_token.text))
             case TokenType.DICE:
                 right = self.parse_expr(right_bp)
-                return DiceNode(count=left, sides=right, selectors=self._parse_selectors(), pos=op_token.pos, length=len(op_token.text))
+                return DiceNode(
+                    count=left, sides=right, selectors=self._parse_selectors(), pos=op_token.pos, length=len(op_token.text)
+                )
             case TokenType.LPAREN:
                 raise ParserError(
                     f"遇到了意外的Token: “{op_token.text}”, 可能缺少括号间的运算符",

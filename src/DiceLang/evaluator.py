@@ -1,9 +1,10 @@
 import random
+from collections.abc import Generator
 from typing import Any
 
 import DiceLang.astnode as ast
 
-from .astnode import AstNode, BinaryOpNode, HighestMod, MacroRefNode, NumberNode, VarNode
+from .astnode import AstNode, MacroRefNode, NumberNode, VarNode
 from .error import EvaluatorError, TodoError
 from .result import ErrorRes, ExprRes, MacroDefRes, Result, VarDefRes, VarInfo
 from .statement import ErrorStmt, ExprStmt, MacroDefStmt, Statement, VarDefStmt
@@ -11,7 +12,11 @@ from .tokens import TokenType
 
 
 class Evaluator:
-    """求值器：输入 Statement，输出 Result（包含中间化简过程）。"""
+    """
+    求值器：输入 Statement，输出 Result（包含中间化简过程）。
+
+    唯一入口为eval方法。
+    """
 
     def __init__(
         self, rng: random.Random | None = None, vars: dict[str, int] | None = None, macros: dict[str, AstNode] | None = None
@@ -32,7 +37,7 @@ class Evaluator:
         在所有子节点都抵达终点的前提下，根据父节点类型进行计算，返回一个新的结果。
         """
         match node:
-            case BinaryOpNode():
+            case ast.BinaryOpNode():
                 match node.op:
                     case TokenType.PLUS:
                         return NumberNode(value=children[0].value + children[1].value)
@@ -61,6 +66,15 @@ class Evaluator:
                         raise EvaluatorError(f"不支持的一元运算符: {node.op}", ast_tree=node)
             case ast.GroupNode():
                 return children[0]  # 直接返回唯一的子节点
+            case ast.FuncCallNode():
+                values = [c.value for c in children]
+                match node.func:
+                    case "max":
+                        return NumberNode(value=max(values))
+                    case "min":
+                        return NumberNode(value=min(values))
+                    case _:  # pragma: no cover
+                        raise EvaluatorError(f"未知函数: {node.func}", ast_tree=node)
             case ast.DiceNode():
                 count = children[0].value
                 sides = children[1].value
@@ -79,18 +93,22 @@ class Evaluator:
     def simplify(self, node: Any) -> AstNode:
         """递归化简 AST 节点：解析变量、展开宏、折叠常量、重建非可折叠节点。"""
         if not isinstance(node, AstNode):
-            # 非 AstNode 的叶子节点（如 selector 的 int 参数）直接返回，无需化简
+            # 非 AstNode 的属性（如 selector 的 int 参数）直接返回，无需化简
             return node
+
         if isinstance(node, VarNode):
             if node.name in self.context:
                 return NumberNode(value=self.context[node.name])
             raise EvaluatorError(f"未定义的变量: {node.name}", ast_tree=node)
+
         if isinstance(node, MacroRefNode):
             if node.name not in self.macros:
                 raise EvaluatorError(f"未定义的宏: &{node.name}", ast_tree=node)
-            return self.macros[node.name]  # 展开宏，下一步再化简
+            return self.macros[node.name]
+
         if isinstance(node, NumberNode):
             return node
+
         # 不是 AstNode 的原子元素直接返回——simplify 可能递归化简子元素，
         # 但非 AstNode 的叶子节点（如 selector 的 int 参数）无需处理
         simplified_attr: list[AstNode | object] = [self.simplify(child) for child in node]
@@ -103,7 +121,7 @@ class Evaluator:
             return self.fold(node, simplified_child)
         return type(node).reconstruct(node, simplified_attr)
 
-    def to_str(self, node: AstNode):
+    def to_str(self, node: AstNode) -> Generator[str]:
         """
         输入 AST，输出一个生成器，依次产出每一步化简的结果字符串。
 

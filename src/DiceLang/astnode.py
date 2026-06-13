@@ -367,5 +367,19 @@ class FuncCallNode(AstNode):  # TODO FUNCALL
     func: str
     args: GroupNode
 
+    def __iter__(self):
+        yield from self.args
+
+    @property
+    def family(self) -> Family:
+        res = Family.ALL
+        for atom in self.args:
+            res &= atom.family
+        return res if res == Family.ALL else Family.NONE
+
+    @staticmethod
+    def reconstruct(node: AstNode, attrs: list) -> AstNode:
+        return FuncCallNode(func=node.func, args=GroupNode(group=attrs))
+
     def __str__(self) -> str:
         return f"{self.func}{self.args}"

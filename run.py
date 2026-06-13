@@ -1,5 +1,6 @@
 import random
 import sys
+import time
 
 sys.path.insert(0, "src")
 
@@ -10,30 +11,28 @@ RNG = random.Random(42)
 
 tests = [
     # 表达式
-    "1+2*3",
-    "2^3^2",
-    "3d6 + 5",
-    # 变量
-    "x = 5; x + 3",
-    "hp = 15; hp = hp - 2; hp",
-    "a, b = 10; a + b",
-    # 复合赋值
-    "x = 5; x += 3; x",
-    "x = 10; x /= 3",
-    "x = 2; x ^= 3",
-    # 错误隔离
-    "1+2; 5/0; 3*4",
-    # 未定义
-    "x += 5",
-    "y = z + 1",
-    # 非法字符
-    "1 @ 2",
-    # 空输入
-    "",
+    "max(1,2,3)",
+    "max(max(1,2,3),min(1,2,3))",
+    "max(2d6,2d8)",
+    "1d(max(1,2,3))",
+    "(max(1,2,3))d(max(1,2,3))",
+    "max(1,2,3) d max(1,2,3)",
+    "max(1,2,3)dmax(1,2,3)",
+    "max(2+3, 3*4)",
+    "1dmax(4,6)",
 ]
 
 if __name__ == "__main__":
+    N = 200
     for text in tests:
+        # 计时
+        start = time.perf_counter()
+        for _ in range(N):
+            interp = Interpreter(text, rng=random.Random(42))
+            list(interp())
+        us = (time.perf_counter() - start) / N * 1_000_000
+
+        # 单次输出
         print(f"=== {text!r} ===")
         interp = Interpreter(text, rng=RNG)
         for r in interp():
@@ -46,4 +45,4 @@ if __name__ == "__main__":
                     print(f"  => {r.value}")
                 case ErrorRes():
                     print(f"  ERR: {r.value}")
-        print()
+        print(f"  time: {us:.1f} μs\n")
