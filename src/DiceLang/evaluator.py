@@ -3,7 +3,7 @@ from typing import Any
 
 import DiceLang.astnode as ast
 
-from .astnode import AstNode, BinaryOpNode, MacroRefNode, NumberNode, VarNode
+from .astnode import AstNode, BinaryOpNode, HighestMod, MacroRefNode, NumberNode, VarNode
 from .error import EvaluatorError, TodoError
 from .result import ErrorRes, ExprRes, MacroDefRes, Result, VarDefRes, VarInfo
 from .statement import ErrorStmt, ExprStmt, MacroDefStmt, Statement, VarDefStmt
@@ -44,13 +44,13 @@ class Evaluator:
                         if children[1].value != 0:
                             return NumberNode(value=children[0].value // children[1].value)
                         else:
-                            raise EvaluatorError("除数不能为零", node=node)
+                            raise EvaluatorError("除数不能为零", ast_tree=node)
                     case TokenType.POW:
                         return NumberNode(value=children[0].value ** children[1].value)
                     case TokenType.MOD:
                         return NumberNode(value=children[0].value % children[1].value)
                     case _:  # pragma: no cover
-                        raise EvaluatorError(f"不支持的二元运算符: {node.op}", node=node)
+                        raise EvaluatorError(f"不支持的二元运算符: {node.op}", ast_tree=node)
             case ast.UnaryOpNode():
                 match node.op:
                     case TokenType.PLUS:
@@ -58,19 +58,23 @@ class Evaluator:
                     case TokenType.MINUS:
                         return NumberNode(value=-children[0].value)
                     case _:  # pragma: no cover
-                        raise EvaluatorError(f"不支持的一元运算符: {node.op}", node=node)
+                        raise EvaluatorError(f"不支持的一元运算符: {node.op}", ast_tree=node)
             case ast.GroupNode():
                 return children[0]  # 直接返回唯一的子节点
             case ast.DiceNode():
                 count = children[0].value
                 sides = children[1].value
-                rolls: list[int] = [self.rng.randint(1, sides) for _ in range(count)]
-                return ast.DiceResNode(rolls=rolls, selectors=node.selectors)  # TODO selectors
+                rolls = tuple((self.rng.randint(1, sides), False) for _ in range(count))
+                # 按值降序排列
+                rolls = tuple(sorted(rolls, key=lambda r: r[0], reverse=True))
+                return ast.DiceResNode(rolls=rolls, selectors=tuple(node.selectors))
             case ast.DiceResNode():
-                # TODO selectors
-                return NumberNode(value=sum(node.rolls))
+                if not node.selectors:
+                    return NumberNode(value=node.sum())
+                return node.selectors[0].apply(node)
+                # return self.fold(node.selectors[0]).apply(node)
             case _:  # pragma: no cover
-                raise EvaluatorError(f"无法折叠的节点: {node}", node=node)
+                raise EvaluatorError(f"无法折叠的节点: {node}", ast_tree=node)
 
     def simplify(self, node: Any) -> AstNode:
         """递归化简 AST 节点：解析变量、展开宏、折叠常量、重建非可折叠节点。"""
@@ -81,10 +85,6 @@ class Evaluator:
             if node.name in self.context:
                 return NumberNode(value=self.context[node.name])
             raise EvaluatorError(f"未定义的变量: {node.name}", ast_tree=node)
-        if isinstance(node, MacroRefNode):
-            if node.name not in self.macros:
-                raise EvaluatorError(f"未定义的宏: &{node.name}", ast_tree=node)
-            return self.simplify(self.macros[node.name])
         if isinstance(node, MacroRefNode):
             if node.name not in self.macros:
                 raise EvaluatorError(f"未定义的宏: &{node.name}", ast_tree=node)
@@ -165,7 +165,7 @@ class Evaluator:
                         case _:  # pragma: no cover
                             raise EvaluatorError(f"不支持的赋值操作: {op}", ast_tree=expr)
                     self.context[name] = new
-                    var_infos.append(VarInfo(name=name, old=old, new=rhs, value=new))
+                    var_infos.append(VarInfo(name=name, old=old, value=new))
                 return VarDefRes(vars=tuple(var_infos))
             case MacroDefStmt(names=names, expr=macro_expr):
                 for name in names:

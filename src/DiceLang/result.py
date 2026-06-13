@@ -9,8 +9,7 @@ class VarInfo(NamedTuple):
 
     name: str
     old: int | None  # None = 首次定义
-    new: int  # 本次赋的值
-    value: Any  # 赋值后的当前值（简单赋值时 = new）
+    value: int  # 赋值后的新值
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -45,9 +44,9 @@ class VarDefRes(Result):
         parts = []
         for v in self.vars:
             if v.old is None:
-                parts.append(f"{v.name}: {v.new}")
+                parts.append(f"{v.name}: {v.value}")
             else:
-                parts.append(f"{v.name}: {v.old} -> {v.new}")
+                parts.append(f"{v.name}: {v.old} -> {v.value}")
         return "\n".join(parts)
 
 

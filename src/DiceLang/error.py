@@ -42,8 +42,8 @@ class ParserError(DiceLangError):
 
     def __init__(self, message: str = "", token: Token | None = None, pos=None, length=None, tokens=None, **kwargs):
         self.token = token
-        self.pos = pos if pos is not None else (token.pos if token else None)
-        self.length = length if length is not None else (len(token.text) if token else None)
+        self.pos = pos if pos is not None else (token and token.pos)
+        self.length = length if length is not None else (token and len(token.text))
         self.tokens = tokens
         super().__init__(message, pos=self.pos, length=self.length, token=token, tokens=tokens, **kwargs)
 
@@ -53,13 +53,13 @@ class EvaluatorError(DiceLangError):
 
     def __init__(self, message: str = "", ast_tree: AstNode | None = None, **kwargs):
         self.ast_tree = ast_tree
-        super().__init__(
-            message,
-            pos=ast_tree.pos if ast_tree else None,
-            length=ast_tree.length if ast_tree else None,
-            ast_tree=ast_tree,
-            **kwargs,
-        )
+        assert ast_tree.pos is not None, f"EvaluatorError 传入的 {type(ast_tree).__name__} 缺少 pos"
+        assert ast_tree.length is not None, f"EvaluatorError 传入的 {type(ast_tree).__name__} 缺少 length"
+        # 若调用方未显式传 pos/length，则从 ast_tree 自动提取
+        kwargs.setdefault("pos", ast_tree and ast_tree.pos)
+        kwargs.setdefault("length", ast_tree and ast_tree.length)
+        kwargs["ast_tree"] = ast_tree
+        super().__init__(message, **kwargs)
 
 
 class TodoError(DiceLangError):

@@ -72,7 +72,7 @@ class Parser:
         self.pos = 0
 
         if self.tokens and self.tokens[-1].type != TokenType.EOF:
-            raise ParserError("Token流必须以EOF结尾", token=self.tokens[-1] if self.tokens else None)
+            raise ParserError("Token流必须以EOF结尾", token=self.tokens and self.tokens[-1])
 
     @property
     def current(self) -> Token:
@@ -101,9 +101,9 @@ class Parser:
                 error
                 if error
                 else ParserError(
-                    f"期望 {expected_type}, 得到类型为: {self.current.type} 位于 {self.current.pos}, 内容为: {self.current.text}",
-                    token=self.current,
-                    pos=self.current.pos,
+                    f"期望 {expected_type}, 得到类型为: {self.peek(offset).type} 位于 {self.peek(offset).pos}, 内容为: {self.peek(offset).text}",
+                    token=self.peek(offset),
+                    pos=self.peek(offset).pos,
                 )
             )
         return self
@@ -179,37 +179,31 @@ class Parser:
     def prefix_parse(self, token: Token) -> AstNode:
         match token.type:
             case TokenType.NUMBER:
-                return NumberNode(value=token.value)
+                return NumberNode(value=token.value, pos=token.pos, length=len(token.text))
             case TokenType.PLUS | TokenType.MINUS:
                 bp = cast(int, self.get_prefix_bp(token))  # 同类型检查器搏斗的产物
                 operand = self.parse_expr(bp)
-                return UnaryOpNode(op=token.type, operand=operand)
+                return UnaryOpNode(op=token.type, operand=operand, pos=token.pos, length=len(token.text))
             case TokenType.IDENTIFIER:
                 if self.match(TokenType.LPAREN):
-                    # FuncCallNode Start
                     group = self._parse_delimited(start=TokenType.LPAREN)
                     if not group:
                         raise ParserError("括号内不存在任何可被解析的值", token=token)
                     return FuncCallNode(
                         func=token.text, args=GroupNode(group=group), pos=token.pos, length=len(token.text + str(group))
                     )
-
                 else:  # VarNode
                     return VarNode(name=token.value, pos=token.pos, length=len(token.text))
-
-            case TokenType.LPAREN:  # Return: GroupNode | FuncCallNode TODO: 验证函数调用是否可行
+            case TokenType.LPAREN:
                 if self.match(TokenType.RPAREN):
                     raise ParserError("括号内不存在任何可被解析的值", token=token)
                 group = self._parse_delimited()
                 if len(group) > 1:
                     raise ParserError("参数过多", token=token, group=group)
-                return GroupNode(group=group)
-
+                return GroupNode(group=group, pos=token.pos, length=None)  # length 由内容决定
             case TokenType.MACRO:
-                ident = self.consume()
-                if ident.type != TokenType.IDENTIFIER:
-                    raise ParserError("宏引用必须跟随标识符", token=ident)
-                return MacroRefNode(name=ident.value)
+                ident = self.expect(TokenType.IDENTIFIER, error=ParserError("宏引用必须跟随标识符", token=self.peek())).consume()
+                return MacroRefNode(name=ident.value, pos=token.pos, length=len(token.text) + len(ident.text))
             case TokenType.EOF:
                 raise ParserError("表达式不完整，意外到达文件结尾", token=token)
             case _:
@@ -222,11 +216,10 @@ class Parser:
         match op_token.type:
             case TokenType.PLUS | TokenType.MINUS | TokenType.MULTIPLY | TokenType.DIVIDE | TokenType.POW | TokenType.MOD:
                 right = self.parse_expr(right_bp)
-                return BinaryOpNode(op=op_token.type, left=left, right=right)
+                return BinaryOpNode(op=op_token.type, left=left, right=right, pos=op_token.pos, length=len(op_token.text))
             case TokenType.DICE:
                 right = self.parse_expr(right_bp)
-                return DiceNode(count=left, sides=right, selectors=self._parse_selectors())
-                return DiceNode(count=left, sides=right, selectors=[])  # TODO selectors
+                return DiceNode(count=left, sides=right, selectors=self._parse_selectors(), pos=op_token.pos, length=len(op_token.text))
             case TokenType.LPAREN:
                 raise ParserError(
                     f"遇到了意外的Token: “{op_token.text}”, 可能缺少括号间的运算符",
@@ -310,40 +303,36 @@ class Parser:
         while True:
             match self.current.type:
                 case TokenType.HIGHEST:
-                    self.consume()
-                    selectors.append(HighestMod(count=self.parse_expr(self.BP_MAX)))
+                    op = self.consume()
+                    selectors.append(HighestMod(count=self.parse_expr(self.BP_MAX), pos=op.pos, length=len(op.text)))
                 case TokenType.LOWEST:
-                    self.consume()
-                    selectors.append(LowestMod(count=self.parse_expr(self.BP_MAX)))
+                    op = self.consume()
+                    selectors.append(LowestMod(count=self.parse_expr(self.BP_MAX), pos=op.pos, length=len(op.text)))
                 case TokenType.KEEP:
-                    self.consume()
-                    selectors.append(KeepMod())
+                    op = self.consume()
+                    selectors.append(KeepMod(pos=op.pos, length=len(op.text)))
                 case TokenType.THROW:
-                    self.consume()
-                    selectors.append(ThrowMod())
+                    op = self.consume()
+                    selectors.append(ThrowMod(pos=op.pos, length=len(op.text)))
                 case TokenType.IF | TokenType.IFCOUNT:
                     op = self.consume()
                     cond = self.consume()
                     if cond.type not in _COND_TOKENS:
                         raise ParserError(f"if 后应为比较运算符，得到 {cond.text}", token=cond)
                     threshold = self.parse_expr(self.BP_MAX)
-                    selectors.append(ConditionMod(condition=cond.type, threshold=threshold))
-                    if self.current.type == TokenType.COLON:
-                        self.consume()
-                        selectors.append(MapMod(map_to=self.parse_expr(self.BP_MAX)))
+                    selectors.append(ConditionMod(condition=cond.type, threshold=threshold, pos=op.pos, length=len(op.text)))
                     if op.type == TokenType.IFCOUNT:
-                        selectors.append(CountMod())
+                        # pos/len 指向 ifc 关键字，否则报错时无法标红源码位置
+                        selectors.append(CountMod(pos=op.pos, length=len(op.text), is_ifc=True))
                 case TokenType.COUNT:
-                    self.consume()
-                    selectors.append(CountMod())
+                    op = self.consume()
+                    selectors.append(CountMod(pos=op.pos, length=len(op.text)))
+                case TokenType.COLON:
+                    op = self.consume()
+                    selectors.append(MapMod(map_to=self.parse_expr(self.BP_MAX), pos=op.pos, length=len(op.text)))
                 case _:
                     break
         return selectors
-
-    # TODO DEL
-    # def __str__(self):
-    #     # 这其实没什么用，和Lexer做个语义对齐而已
-    #     return f"<Parser: {self.ast}>" if self.ast else "<Parser: empty>"
 
 
 # --- 优先级表 ---

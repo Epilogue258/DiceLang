@@ -229,18 +229,19 @@ def test_dice_in_expression():
 
 
 def test_dice_selectors_complex():
-    """10d6 h4 l4 ifc >= 3 : (2d6)"""
+    """10d6 h4 l4 ifc >= 3 : (2d6) — ifc 展开为 if >= 3 c : (2d6)，CountMod 在 MapMod 之前"""
     result = parse_or_error("10d6 h4 l4 ifc >= 3 : (2d6)")
     _log("10d6 h4 l4 ifc >= 3 : (2d6)", result)
     assert isinstance(result, DiceNode)
-    assert result.selectors[0] == HighestMod(count=NumberNode(value=4))
-    assert result.selectors[1] == LowestMod(count=NumberNode(value=4))
+    assert isinstance(result.selectors[0], HighestMod)
+    assert result.selectors[0].count.value == 4
+    assert isinstance(result.selectors[1], LowestMod)
+    assert result.selectors[1].count.value == 4
     assert isinstance(result.selectors[2], ConditionMod)
     assert result.selectors[2].condition == TokenType.GTE
-    assert result.selectors[2].threshold == NumberNode(value=3)
-    assert isinstance(result.selectors[3], MapMod)
-    assert isinstance(result.selectors[3].map_to, GroupNode)
-    assert isinstance(result.selectors[4], CountMod)
+    assert result.selectors[2].threshold.value == 3
+    assert isinstance(result.selectors[3], CountMod)  # c 紧跟 if
+    assert isinstance(result.selectors[4], MapMod)     # : 在 c 之后（求值时会报错，count 先于 map）
 
 
 def test_keyword_as_variable():

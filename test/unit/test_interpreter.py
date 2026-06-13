@@ -172,7 +172,7 @@ def test_vardef():
     assert isinstance(res, VarDefRes)
     assert res.vars[0].name == "x"
     assert res.vars[0].old is None
-    assert res.vars[0].new == 5
+    assert res.vars[0].value == 5
 
 
 def test_macrodef():
