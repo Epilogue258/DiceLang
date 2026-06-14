@@ -5,4 +5,5 @@ htmlcov/
 .coverage
 .claude/
 todo.md
-tmp.txtrun.py
+tmp.py
+run.py
