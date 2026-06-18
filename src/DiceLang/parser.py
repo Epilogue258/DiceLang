@@ -19,7 +19,7 @@ from .astnode import (
     UnaryOpNode,
     VarNode,
 )  # TODO 确保应导尽导
-from .error import ParserError, TodoError
+from .error import ParserError
 from .statement import ErrorStmt, ExprStmt, MacroDefStmt, Statement, VarDefStmt
 from .tokens import Token, TokenType
 
@@ -68,7 +68,7 @@ class Parser:
     BP_MAX = 999  # 选择器参数绑定力上限，阻止意外吃入后续 token
 
     def __init__(self, tokens: list[Token] | None = None):
-        self.tokens = tokens if tokens is not None else []
+        self.tokens: list[Token] = tokens if tokens is not None else []
         self.pos = 0
 
         if self.tokens and self.tokens[-1].type != TokenType.EOF:
@@ -200,7 +200,9 @@ class Parser:
                 group = self._parse_delimited()
                 if len(group) > 1:
                     raise ParserError("参数过多", token=token, group=group)
-                return GroupNode(group=group, pos=token.pos, length=None)  # length 由内容决定
+                return GroupNode(
+                    group=group, selectors=tuple(self._parse_selectors()), pos=token.pos, length=None
+                )  # length 由内容决定
             case TokenType.MACRO:
                 ident = self.expect(TokenType.IDENTIFIER, error=ParserError("宏引用必须跟随标识符", token=self.peek())).consume()
                 return MacroRefNode(name=ident.value, pos=token.pos, length=len(token.text) + len(ident.text))

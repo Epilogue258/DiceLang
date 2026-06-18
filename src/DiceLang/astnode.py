@@ -18,9 +18,24 @@ from __future__ import (
 
 import enum
 from dataclasses import dataclass, fields
-from typing import Any
+from typing import NamedTuple, cast
 
 from .tokens import TokenType
+
+
+class Roll(NamedTuple):
+    """骰子结果中单颗骰子的状态。
+
+    value    — 骰值
+    sides    — 源骰子面数（D6/D8/...）
+    marked   — 是否被 h/l/if 等选择器标记
+    exploded — 是否来自爆炸（追加骰）
+    """
+
+    value: int
+    sides: int
+    marked: bool = False
+    exploded: bool = False
 
 
 class Family(enum.Flag):  # 底层就是位掩码啦
@@ -29,7 +44,8 @@ class Family(enum.Flag):  # 底层就是位掩码啦
     MUL = enum.auto()
     POW = enum.auto()
     DICE = enum.auto()
-    ALL = ADD | MUL | POW | DICE
+    SELECTOR = enum.auto()
+    ALL = ADD | MUL | POW | DICE | SELECTOR
 
 
 # 我也不想用kw_only, 但是不加的话就会出现dataclass的坑:
@@ -166,7 +182,7 @@ class DiceNode(AstNode):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class DiceResNode(AstNode):
-    rolls: tuple[tuple[int, bool], ...]
+    rolls: tuple[Roll, ...]
     selectors: tuple[ModifierNode, ...]
 
     @property
@@ -177,12 +193,13 @@ class DiceResNode(AstNode):
 
     def sum(self) -> int:
         """有标记求和标记项，无标记全求。"""
-        marked = [v for v, m in self.rolls if m]
-        return sum(marked or [v for v, _ in self.rolls])
+        marked = [r.value for r in self.rolls if r.marked]
+        return sum(marked or [r.value for r in self.rolls])
 
     def __str__(self) -> str:
-        def fmt(r: tuple[int, bool]) -> str:
-            return f"({r[0]})" if r[1] else str(r[0])
+        def fmt(r: Roll) -> str:
+            inner = f"D{r.sides}!{r.value}" if r.exploded else str(r.value)
+            return f"({inner})" if r.marked else inner
 
         return f"[{', '.join(fmt(r) for r in self.rolls)}]"
 
@@ -239,23 +256,30 @@ class UnaryOpNode(AstNode):
 @dataclass(frozen=True, slots=True, kw_only=True, unsafe_hash=False)
 class GroupNode(AstNode):
     group: list[AstNode]
+    selectors: tuple[ModifierNode, ...] = ()
 
     def __iter__(self):
         yield from self.group
 
     @property
     def family(self) -> Family:
+        if self.selectors:
+            return Family.SELECTOR  # 带选择器时不参与同类折叠，由 fold 显式处理
         res = Family.ALL
         for atom in self.group:
             res &= atom.family
         return res if res == Family.ALL else Family.NONE
 
     @staticmethod
-    def reconstruct(node: AstNode, attrs: list) -> AstNode:
-        return GroupNode(group=attrs)  # 直接重建
+    def reconstruct(node: AstNode, attrs: list) -> GroupNode:
+        node = cast(GroupNode, node)
+        return GroupNode(group=attrs, selectors=node.selectors, pos=node.pos, length=node.length)
 
     def __str__(self) -> str:
-        return f"({', '.join(map(str, self.group))})"
+        inner = f"({', '.join(map(str, self.group))})"
+        if self.selectors:
+            inner += "".join(str(s) for s in self.selectors)
+        return inner
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

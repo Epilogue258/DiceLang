@@ -8,9 +8,11 @@ from DiceLang.astnode import (
     DiceNode,
     GroupNode,
     HighestMod,
+    KeepMod,
     LowestMod,
     MapMod,
     NumberNode,
+    ThrowMod,
     UnaryOpNode,
 )
 from DiceLang.error import DiceLangError, ParserError, TodoError
@@ -263,6 +265,75 @@ def test_selectors_in_arithmetic():
     result = parse_or_error("1 + h2 + l3 + :4")
     _log("1 + h2 + l3 + :4", result)
     assert isinstance(result, DiceLangError)
+
+
+# ============================================================
+# 括号 + 选择器
+# ============================================================
+
+
+def test_paren_single_dice_with_selector():
+    """(3d6)h2 → GroupNode 包裹 DiceNode，selectors 挂在 GroupNode"""
+    result = parse_or_error("(3d6)h2")
+    _log("(3d6)h2", result)
+    assert isinstance(result, GroupNode)
+    assert len(result.group) == 1
+    assert isinstance(result.group[0], DiceNode)
+    assert len(result.selectors) == 1
+    assert isinstance(result.selectors[0], HighestMod)
+    assert result.selectors[0].count.value == 2
+
+
+def test_paren_single_dice_bare():
+    """(2d8) → 纯括号包裹单骰，解析为 GroupNode（保留括号语义）"""
+    result = parse_or_error("(2d8)")
+    _log("(2d8)", result)
+    assert isinstance(result, GroupNode)
+    assert len(result.group) == 1
+    assert isinstance(result.group[0], DiceNode)
+    assert result.group[0].count.value == 2
+    assert result.group[0].sides.value == 8
+    assert result.selectors == ()
+
+
+def test_paren_complex_with_selectors():
+    """(2d8+1d6+2) h1 if >4 : 2 l1 t → 全部 5 个选择器链挂在 GroupNode"""
+    result = parse_or_error("(2d8+1d6+2) h1 if >4 : 2 l1 t")
+    _log("(2d8+1d6+2) h1 if >4 : 2 l1 t", result)
+    assert isinstance(result, GroupNode)
+    assert len(result.selectors) == 5
+    assert isinstance(result.selectors[0], HighestMod)
+    assert result.selectors[0].count.value == 1
+    assert isinstance(result.selectors[1], ConditionMod)
+    assert result.selectors[1].condition == TokenType.GT
+    assert result.selectors[1].threshold.value == 4
+    assert isinstance(result.selectors[2], MapMod)
+    assert result.selectors[2].map_to.value == 2
+    assert isinstance(result.selectors[3], LowestMod)
+    assert result.selectors[3].count.value == 1
+    assert isinstance(result.selectors[4], ThrowMod)
+
+
+def test_paren_expr_with_selector():
+    """(1d8+1d6)h1 → GroupNode 包裹 BinaryOpNode，selectors 挂在 GroupNode"""
+    result = parse_or_error("(1d8+1d6)h1")
+    _log("(1d8+1d6)h1", result)
+    assert isinstance(result, GroupNode)
+    assert len(result.group) == 1
+    assert isinstance(result.group[0], BinaryOpNode)
+    assert len(result.selectors) == 1
+    assert isinstance(result.selectors[0], HighestMod)
+    assert result.selectors[0].count.value == 1
+
+
+def test_paren_expr_no_selector():
+    """(1d8+1d6) → GroupNode 包裹 BinaryOpNode，无 selectors"""
+    result = parse_or_error("(1d8+1d6)")
+    _log("(1d8+1d6)", result)
+    assert isinstance(result, GroupNode)
+    assert len(result.group) == 1
+    assert isinstance(result.group[0], BinaryOpNode)
+    assert result.selectors == ()
 
 
 # ============================================================

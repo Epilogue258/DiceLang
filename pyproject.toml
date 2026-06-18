@@ -124,8 +124,13 @@ docstring-code-line-length = "dynamic"
 
 [dependency-groups]
 dev = [
+    "basedpyright>=1.39.8",
     "pytest-benchmark>=5.2.3",
     "pytest-cov>=7.1.0",
 ]
+
+[tool.basedpyright]
+typeCheckingMode = "standard"
+pythonVersion = "3.13"
 
 

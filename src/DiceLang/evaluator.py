@@ -1,11 +1,11 @@
 import random
-from collections.abc import Callable, Generator
+from collections.abc import Generator
 from operator import eq, ge, gt, le, lt, ne
 from typing import Any
 
 import DiceLang.astnode as ast
 
-from .astnode import AstNode, MacroRefNode, NumberNode, VarNode
+from .astnode import AstNode, MacroRefNode, NumberNode, Roll, VarNode
 from .error import EvaluatorError, TodoError
 from .result import ErrorRes, ExprRes, MacroDefRes, Result, VarDefRes, VarInfo
 from .statement import ErrorStmt, ExprStmt, MacroDefStmt, Statement, VarDefStmt
@@ -89,9 +89,9 @@ class Evaluator:
             case ast.DiceNode():
                 count = children[0].value
                 sides = children[1].value
-                rolls = tuple((self.rng.randint(1, sides), False) for _ in range(count))
+                rolls = tuple(Roll(value=self.rng.randint(1, sides), sides=sides) for _ in range(count))
                 # 按值降序排列
-                rolls = tuple(sorted(rolls, key=lambda r: r[0], reverse=True))
+                rolls = tuple(sorted(rolls, key=lambda r: r.value, reverse=True))
                 return ast.DiceResNode(rolls=rolls, selectors=tuple(node.selectors))
             case ast.DiceResNode():
                 if not node.selectors:
@@ -111,29 +111,27 @@ class Evaluator:
                 source = reversed(node.rolls) if reverse else node.rolls
                 marked = 0
                 result = []
-                for value, is_marked in source:
-                    if not is_marked and marked < mark_count:
-                        result.append((value, True))
+                for r in source:
+                    if not r.marked and marked < mark_count:
+                        result.append(r._replace(marked=True))
                         marked += 1
                     else:
-                        result.append((value, is_marked))
+                        result.append(r)
                 rolls = tuple(reversed(result)) if reverse else tuple(result)
                 return ast.DiceResNode(rolls=rolls, selectors=remaining_selectors)
             case ast.ConditionMod(condition=condition, threshold=threshold_node):
                 threshold: int = threshold_node.value
                 cmp = _COND_OPS[condition]
-                rolls = tuple(
-                    (value, cmp(value, threshold)) if not is_marked else (value, is_marked) for value, is_marked in node.rolls
-                )
+                rolls = tuple(r._replace(marked=cmp(r.value, threshold)) if not r.marked else r for r in node.rolls)
                 return ast.DiceResNode(rolls=rolls, selectors=remaining_selectors)
             case ast.KeepMod():
                 return ast.DiceResNode(
-                    rolls=tuple((value, False) for value, is_marked in node.rolls if is_marked),
+                    rolls=tuple(r._replace(marked=False) for r in node.rolls if r.marked),
                     selectors=remaining_selectors,
                 )
             case ast.ThrowMod():
                 return ast.DiceResNode(
-                    rolls=tuple((value, False) for value, is_marked in node.rolls if not is_marked),
+                    rolls=tuple(r._replace(marked=False) for r in node.rolls if not r.marked),
                     selectors=remaining_selectors,
                 )
             case ast.CountMod(is_ifc=is_ifc):
@@ -147,12 +145,14 @@ class Evaluator:
                         pos=mod.pos,
                         length=mod.length,
                     )
-                marked_count = sum(1 for _, is_marked in node.rolls if is_marked)
+                marked_count = sum(1 for r in node.rolls if r.marked)
                 return NumberNode(value=marked_count if marked_count else sum(1 for _ in node.rolls))
             case ast.MapMod(map_to=map_to_node):
                 mapped_value: int = map_to_node.value
-                new_rolls = tuple((mapped_value if is_marked else value, False) for value, is_marked in node.rolls)
+                new_rolls = tuple(r._replace(value=mapped_value, marked=False) if r.marked else r for r in node.rolls)
                 return ast.DiceResNode(rolls=new_rolls, selectors=remaining_selectors)
+            case _:  # pragma: no cover
+                raise EvaluatorError(f"未处理的选择器类型: {type(mod).__name__}", ast_tree=node)
 
     def simplify(self, node: Any) -> AstNode:
         """递归化简 AST 节点：解析变量、展开宏、折叠常量、重建非可折叠节点。"""

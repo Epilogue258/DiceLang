@@ -9,7 +9,7 @@ import random
 
 import pytest
 
-from DiceLang.error import DiceLangError
+from DiceLang.error import DiceLangError, TodoError
 from DiceLang.evaluator import Evaluator
 from DiceLang.lexer import Lexer
 from DiceLang.parser import Parser
@@ -111,6 +111,53 @@ def test_selector_steps_count():
 
 
 # ============================================================
+# 边界情况：全选 / 全弃 / 空集
+# ============================================================
+
+
+def test_selector_steps_all_thrown():
+    """4d6 if >=1 t：全标记 → 全丢弃 → 0"""
+    steps = eval_steps("4d6 if >=1 t")
+    _log("4d6 if >=1 t", steps)
+    assert steps[-1] == "0"
+
+
+def test_selector_steps_all_kept():
+    """4d6 if >=1 k：全标记 → 全保留 → 全求和"""
+    steps = eval_steps("4d6 if >=1 k")
+    _log("4d6 if >=1 k", steps)
+    assert steps[-1] == "14"
+
+
+def test_selector_steps_none_match_t():
+    """4d6 if >=7 t：无标记 → 丢弃标记 → 全保留 → 全求和"""
+    steps = eval_steps("4d6 if >=7 t")
+    _log("4d6 if >=7 t", steps)
+    assert steps[-1] == "14"
+
+
+def test_selector_steps_empty_after_k():
+    """4d6 k：无标记 → 保留标记 → 全丢弃 → 0"""
+    steps = eval_steps("4d6 k")
+    _log("4d6 k", steps)
+    assert steps[-1] == "0"
+
+
+def test_selector_steps_h_overcount():
+    """2d6 h5：标记数 > 骰子数 → 全标记 → 全求和"""
+    steps = eval_steps("2d6 h5")
+    _log("2d6 h5", steps)
+    assert steps[-1] == "7"
+
+
+def test_selector_steps_if_eq_mismatch():
+    """1d6 if ==7 t：单骰不匹配 → 无标记 → 全保留"""
+    steps = eval_steps("1d6 if ==7 t")
+    _log("1d6 if ==7 t", steps)
+    assert steps[-1] == "6"
+
+
+# ============================================================
 # 选择器参数含表达式
 # ============================================================
 
@@ -138,6 +185,30 @@ def test_selector_dynamic_if():
     steps = eval_steps("4d6 if>(3d6)")
     _log("4d6 if>(3d6)", steps)
     assert steps[-1] == "12"
+
+
+# ============================================================
+# 括号 + 选择器
+# ============================================================
+
+
+@pytest.mark.xfail(reason="GroupNode 选择器分发尚未实现", strict=True, raises=TodoError)
+def test_paren_dice_with_selector():
+    """TODO: (3d6)h2 → 选择器分发到内部 DiceNode → 3d6h2"""
+    raise TodoError("GroupNode 选择器分发尚未实现")
+
+
+@pytest.mark.xfail(reason="GroupNode 选择器分发尚未实现", strict=True, raises=TodoError)
+def test_paren_expr_with_selector():
+    """TODO: (1d8+1d6)h1 → 选择器分发到内部各 DiceNode"""
+    raise TodoError("GroupNode 选择器分发尚未实现")
+
+
+def test_paren_no_selector():
+    """(1d8+1d6) 无选择器 → 正常求值"""
+    steps = eval_steps("(1d8+1d6)")
+    _log("(1d8+1d6)", steps)
+    assert steps[-1] == "3"
 
 
 # ============================================================
