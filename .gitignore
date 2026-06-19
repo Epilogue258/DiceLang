@@ -7,4 +7,5 @@ htmlcov/
 todo.md
 tmp.*
 run.py
-.*/
+.claude/
+.vscode/
