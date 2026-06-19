@@ -34,10 +34,11 @@ class Lexer:  # 词法分析器：输入字符串，输出 Token 流。
                 # 注意SYMBOLS和SYMBOL_TO_TYPE的区别, 前者是符号集合, 比如尽管不存在!这个token, 由于其为!=的一部分,in SYMBOLS为真
                 symbol = _consume_while(lambda c: c in SYMBOLS, text, index, max_length=LONGEST_SYMBOL_LENGTH)
                 # 然后, 对于1-(2), 会匹配成-(, 这时就需要回退到-
-                while symbol not in SYMBOL_TO_TYPE and len(symbol) > 1:
+                while symbol not in SYMBOL_TO_TYPE and symbol not in STANDARD_SYMBOLS and len(symbol) > 1:
                     symbol = symbol[:-1]  # 对于上述例子, 这里回退后symbol变作-, (会在下次循环捕获, 如此实现最长匹配
+                std_symbol = _standardize_symbol(symbol)
                 end_pos = index + len(symbol)
-                tokens.append(Token(SYMBOL_TO_TYPE[symbol], _standardize_symbol(symbol), symbol, index))
+                tokens.append(Token(SYMBOL_TO_TYPE[std_symbol], std_symbol, symbol, index))
                 index = end_pos
             else:
                 raise LexerError(f"未知的字符: {ch}", pos=index, length=1)
@@ -103,16 +104,35 @@ SYMBOL_TO_TYPE: dict[str, TokenType] = {
 }
 
 STANDARD_SYMBOLS: dict[str, str] = {
-    "**": "^",
-    "e": "!",
+    # 常见中文输入法产物标准化
     "；": ";",
     "，": ",",
+    "（": "(",
+    "）": ")",
+    "＋": "+",
+    "－": "-",
+    "×": "*",
+    "÷": "/",
+    "％": "%",
+    "＾": "^",
+    "＝": "=",
+    "＜": "<",
+    "＜=": "<=",
+    "＞": ">",
+    "＞=": ">=",
+    "！": "!",
+    "！=": "!=",
+    "＆": "&",
+    "：": ":",
+    # 语义标准化
+    "**": "^",
+    "e": "!",
     "**=": "^=",
 }
 
 LONGEST_SYMBOL_LENGTH = max(len(sym) for sym in SYMBOL_TO_TYPE)  # 有趣的是，python直接取用默认获取的是key而无需解包
 
-SYMBOLS = frozenset("".join(SYMBOL_TO_TYPE.keys()))
+SYMBOLS = frozenset("".join((*SYMBOL_TO_TYPE.keys(), *STANDARD_SYMBOLS.keys())))
 
 
 def _consume_while(predicate: Callable[[str], bool], text: str, pos: int, max_length: int | None = None) -> str:

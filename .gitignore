@@ -5,5 +5,5 @@ htmlcov/
 .coverage
 .claude/
 todo.md
-tmp.py
+tmp.*
 run.py

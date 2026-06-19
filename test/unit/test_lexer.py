@@ -173,3 +173,32 @@ def test_lex_invalid(bad_text):
     result = lex_or_error(bad_text)
     _log(bad_text, result)
     assert isinstance(result, LexerError), f"期望 LexerError, 得到 {type(result).__name__}: {result}"
+
+
+# ============================================================
+# 全角字符标准化
+# ============================================================
+
+
+def test_lex_fullwidth_parens():
+    """（3d6）→ (3d6)，全角括号标准化为 ASCII"""
+    tokens = Lexer.tokenize("（3d6）")
+    # TokenType 序列应为: LPAREN NUMBER DICE NUMBER RPAREN EOF
+    assert [t.type for t in tokens] == [
+        tktype.LPAREN, tktype.NUMBER, tktype.DICE,
+        tktype.NUMBER, tktype.RPAREN, tktype.EOF,
+    ]
+    # value 已标准化
+    assert str(tokens[0].value) == "("
+    assert str(tokens[4].value) == ")"
+
+def test_lex_fullwidth_semicolon():
+    """分号分隔：1d6；2d8 → 1d6;2d8"""
+    tokens = Lexer.tokenize("1d6；2d8")
+    types = [t.type for t in tokens]
+    assert types == [
+        tktype.NUMBER, tktype.DICE, tktype.NUMBER,
+        tktype.SEMICOLON,
+        tktype.NUMBER, tktype.DICE, tktype.NUMBER,
+        tktype.EOF,
+    ]
