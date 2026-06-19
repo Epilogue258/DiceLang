@@ -44,8 +44,7 @@ class Family(enum.Flag):  # 底层就是位掩码啦
     MUL = enum.auto()
     POW = enum.auto()
     DICE = enum.auto()
-    SELECTOR = enum.auto()
-    ALL = ADD | MUL | POW | DICE | SELECTOR
+    ALL = ADD | MUL | POW | DICE
 
 
 # 我也不想用kw_only, 但是不加的话就会出现dataclass的坑:
@@ -96,7 +95,13 @@ class NumberNode(AstNode):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ModifierNode(AstNode):
-    """骰子后缀修饰器基类"""
+    """骰子后缀修饰器基类。化简完毕后 family=ALL，否则 family=NONE。"""
+
+    @property
+    def family(self) -> Family:
+        if all(isinstance(c, NumberNode) for c in self.children):
+            return Family.ALL
+        return Family.NONE
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -170,7 +175,7 @@ class MapMod(ModifierNode):
 class DiceNode(AstNode):
     count: AstNode
     sides: AstNode
-    selectors: list[ModifierNode]  # 有序的选择器链
+    selectors: tuple[ModifierNode, ...] = ()  # 有序的选择器链
 
     @property
     def family(self) -> Family:
@@ -201,7 +206,10 @@ class DiceResNode(AstNode):
             inner = f"D{r.sides}!{r.value}" if r.exploded else str(r.value)
             return f"({inner})" if r.marked else inner
 
-        return f"[{', '.join(fmt(r) for r in self.rolls)}]"
+        s = f"[{', '.join(fmt(r) for r in self.rolls)}]"
+        if self.selectors:
+            s += ''.join(str(m) for m in self.selectors)
+        return s
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -252,19 +260,24 @@ class UnaryOpNode(AstNode):
         return f"{self.op}{self.operand}"
 
 
-# frozen会自动生成hash, 不过放宽心, 会自动报错的啦: TypeError: unhashable type: 'list'
 @dataclass(frozen=True, slots=True, kw_only=True, unsafe_hash=False)
 class GroupNode(AstNode):
     group: list[AstNode]
     selectors: tuple[ModifierNode, ...] = ()
 
     def __iter__(self):
+        if self.selectors:
+            yield from self.selectors
         yield from self.group
+
+    @property
+    def children(self) -> list[AstNode]:
+        return list(self.group)
 
     @property
     def family(self) -> Family:
         if self.selectors:
-            return Family.SELECTOR  # 带选择器时不参与同类折叠，由 fold 显式处理
+            return Family.ALL  # 有选择器时强制流入 fold
         res = Family.ALL
         for atom in self.group:
             res &= atom.family

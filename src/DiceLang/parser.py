@@ -222,7 +222,7 @@ class Parser:
             case TokenType.DICE:
                 right = self.parse_expr(right_bp)
                 return DiceNode(
-                    count=left, sides=right, selectors=self._parse_selectors(), pos=op_token.pos, length=len(op_token.text)
+                    count=left, sides=right, selectors=tuple(self._parse_selectors()), pos=op_token.pos, length=len(op_token.text)
                 )
             case TokenType.LPAREN:
                 raise ParserError(

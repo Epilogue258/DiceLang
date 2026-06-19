@@ -51,63 +51,63 @@ def test_selector_steps_h2():
     """4d6h2：投骰 → 标记最高2个 → 求和"""
     steps = eval_steps("4d6h2")
     _log("4d6h2", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]", "[(6), (6), 1, 1]", "12"]
+    assert steps == ["4D6", "[6, 6, 1, 1]h2", "[(6), (6), 1, 1]", "12"]
 
 
 def test_selector_steps_h2k():
     """4d6h2k：投骰 → 标记 → 保留 → 求和"""
     steps = eval_steps("4d6h2k")
     _log("4d6h2k", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]", "[(6), (6), 1, 1]", "[6, 6]", "12"]
+    assert steps == ["4D6", "[6, 6, 1, 1]h2k", "[(6), (6), 1, 1]k", "[6, 6]", "12"]
 
 
 def test_selector_steps_h2t():
     """4d6h2t：投骰 → 标记 → 丢弃 → 求和"""
     steps = eval_steps("4d6h2t")
     _log("4d6h2t", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]", "[(6), (6), 1, 1]", "[1, 1]", "2"]
+    assert steps == ["4D6", "[6, 6, 1, 1]h2t", "[(6), (6), 1, 1]t", "[1, 1]", "2"]
 
 
 def test_selector_steps_h3l3():
     """4d6h3l3：全选 = 全求"""
     steps = eval_steps("4d6h3l3")
     _log("4d6h3l3", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]", "[(6), (6), (1), 1]", "[(6), (6), (1), (1)]", "14"]
+    assert steps == ["4D6", "[6, 6, 1, 1]h3l3", "[(6), (6), (1), 1]l3", "[(6), (6), (1), (1)]", "14"]
 
 
 def test_selector_steps_t():
     """4d6t：无标记，t 不变"""
     steps = eval_steps("4d6t")
     _log("4d6t", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]", "[6, 6, 1, 1]", "14"]
+    assert steps == ["4D6", "[6, 6, 1, 1]t", "[6, 6, 1, 1]", "14"]
 
 
 def test_selector_steps_k():
     """4d6k：无标记，k 丢弃全部 → 0"""
     steps = eval_steps("4d6k")
     _log("4d6k", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]", "[]", "0"]
+    assert steps == ["4D6", "[6, 6, 1, 1]k", "[]", "0"]
 
 
 def test_selector_steps_if():
     """4d6 if>4：标记大于4的元素"""
     steps = eval_steps("4d6 if>4")
     _log("4d6 if>4", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]", "[(6), (6), 1, 1]", "12"]
+    assert steps == ["4D6", "[6, 6, 1, 1]if GT 4", "[(6), (6), 1, 1]", "12"]
 
 
 def test_selector_steps_ifc():
     """4d6 ifc>4：标记 → 计数（跳过中间 [(1),(1)] 步骤）"""
     steps = eval_steps("4d6 ifc>4")
     _log("4d6 ifc>4", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]", "[(6), (6), 1, 1]", "2"]
+    assert steps == ["4D6", "[6, 6, 1, 1]if GT 4ifc", "[(6), (6), 1, 1]ifc", "2"]
 
 
 def test_selector_steps_count():
     """4d6 count：无标记 → 统计全部"""
     steps = eval_steps("4d6 count")
     _log("4d6 count", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]", "4"]
+    assert steps == ["4D6", "[6, 6, 1, 1]count", "4"]
 
 
 # ============================================================
@@ -192,16 +192,18 @@ def test_selector_dynamic_if():
 # ============================================================
 
 
-@pytest.mark.xfail(reason="GroupNode 选择器分发尚未实现", strict=True, raises=TodoError)
 def test_paren_dice_with_selector():
-    """TODO: (3d6)h2 → 选择器分发到内部 DiceNode → 3d6h2"""
-    raise TodoError("GroupNode 选择器分发尚未实现")
+    """(3d6)h2 → 分发 → 3d6h2 → [6,1,1] → [(6),(1),1] → 7"""
+    steps = eval_steps("(3d6)h2")
+    _log("(3d6)h2", steps)
+    assert steps == ["(3D6)h2", "([6, 1, 1]h2)", "([(6), (1), 1])", "7"]
 
 
-@pytest.mark.xfail(reason="GroupNode 选择器分发尚未实现", strict=True, raises=TodoError)
 def test_paren_expr_with_selector():
-    """TODO: (1d8+1d6)h1 → 选择器分发到内部各 DiceNode"""
-    raise TodoError("GroupNode 选择器分发尚未实现")
+    """(1d8+1d6)h1 → 分发 → 1d8h1 + 1d6h1 → 3"""
+    steps = eval_steps("(1d8+1d6)h1")
+    _log("(1d8+1d6)h1", steps)
+    assert steps[-1] == "3"
 
 
 def test_paren_no_selector():
@@ -220,25 +222,25 @@ def test_mapmod_if():
     """4d6 if>4 : 5 → [6,6,1,1] 标记>4 → [(6),(6),1,1] → :5 → [5,5,1,1] → 12"""
     steps = eval_steps("4d6 if>4 : 5")
     _log("4d6 if>4 : 5", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]", "[(6), (6), 1, 1]", "[5, 5, 1, 1]", "12"]
+    assert steps == ["4D6", "[6, 6, 1, 1]if GT 4: 5", "[(6), (6), 1, 1]: 5", "[5, 5, 1, 1]", "12"]
 
 
 def test_mapmod_if_eq():
     """4d6 if ==1 : 2 → [6,6,1,1] 标记==1 → [6,6,(1),(1)] → :2 → [6,6,2,2] → 16"""
     steps = eval_steps("4d6 if ==1 : 2")
     _log("4d6 if ==1 : 2", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]", "[6, 6, (1), (1)]", "[6, 6, 2, 2]", "16"]
+    assert steps == ["4D6", "[6, 6, 1, 1]if EQ 1: 2", "[6, 6, (1), (1)]: 2", "[6, 6, 2, 2]", "16"]
 
 
 def test_mapmod_h():
     """4d6 h2 : 3 → [6,6,1,1] 标记最高2 → [(6),(6),1,1] → :3 → [3,3,1,1] → 8"""
     steps = eval_steps("4d6 h2 : 3")
     _log("4d6 h2 : 3", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]", "[(6), (6), 1, 1]", "[3, 3, 1, 1]", "8"]
+    assert steps == ["4D6", "[6, 6, 1, 1]h2: 3", "[(6), (6), 1, 1]: 3", "[3, 3, 1, 1]", "8"]
 
 
 def test_mapmod_empty_match():
     """4d6 if>7 : 2 → [6,6,1,1] 无标记 → :2 空操作 → 14"""
     steps = eval_steps("4d6 if>7 : 2")
     _log("4d6 if>7 : 2", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]", "[6, 6, 1, 1]", "[6, 6, 1, 1]", "14"]
+    assert steps == ["4D6", "[6, 6, 1, 1]if GT 7: 2", "[6, 6, 1, 1]: 2", "[6, 6, 1, 1]", "14"]

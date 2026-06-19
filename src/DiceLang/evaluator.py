@@ -1,3 +1,5 @@
+import dataclasses
+import queue
 import random
 from collections.abc import Generator
 from operator import eq, ge, gt, le, lt, ne
@@ -75,8 +77,13 @@ class Evaluator:
                         return NumberNode(value=-children[0].value)
                     case _:  # pragma: no cover
                         raise EvaluatorError(f"不支持的一元运算符: {node.op}", ast_tree=node)
-            case ast.GroupNode():
-                return children[0]  # 直接返回唯一的子节点
+            case ast.GroupNode(selectors=selectors):
+                if not selectors:
+                    return children[0]
+                # 递归将 selectors 分发给内部所有 DiceNode，返回空选择器的 GroupNode
+                new_group = [self._distribute_selectors(c, selectors) for c in node.group]
+                return ast.GroupNode(group=new_group, selectors=(), pos=node.pos, length=node.length)
+
             case ast.FuncCallNode():
                 values = [c.value for c in children]
                 match node.func:
@@ -99,6 +106,25 @@ class Evaluator:
                 return self._apply_modifier(node)
             case _:  # pragma: no cover
                 raise EvaluatorError(f"无法折叠的节点: {node}", ast_tree=node)
+
+    def _distribute_selectors(
+        self, node: AstNode, selectors: tuple[ast.ModifierNode, ...]
+    ) -> AstNode:  # TODO ai写的，我需要检查逻辑
+        """递归将 selectors 附加到子树中所有 DiceNode 上。"""
+        if isinstance(node, ast.DiceNode):
+            new_sel = tuple(node.selectors) + selectors
+            return ast.DiceNode(
+                count=node.count,
+                sides=node.sides,
+                selectors=new_sel,
+                pos=node.pos,
+                length=node.length,
+            )
+        if isinstance(node, ast.NumberNode):
+            return node  # 常数无选择器
+        # 其他节点递归处理子节点（保留非 AstNode 值原样透传）
+        new_attrs = [self._distribute_selectors(c, selectors) if isinstance(c, AstNode) else c for c in node]
+        return type(node).reconstruct(node, new_attrs)
 
     def _apply_modifier(self, node: ast.DiceResNode) -> AstNode:
         """对 DiceResNode 施加当前选择器（selectors[0]），返回化简后的节点。"""
@@ -173,13 +199,18 @@ class Evaluator:
         if isinstance(node, NumberNode):
             return node
 
+        # GroupNode 带选择器：先将选择器分发到内部 DiceNode，再走正常路径
+        if isinstance(node, ast.GroupNode) and node.selectors:
+            raw = [self._distribute_selectors(c, node.selectors) for c in node.group]
+            node = ast.GroupNode(group=raw, selectors=(), pos=node.pos, length=node.length)
+
         # 不是 AstNode 的原子元素直接返回——simplify 可能递归化简子元素，
         # 但非 AstNode 的叶子节点（如 selector 的 int 参数）无需处理
         simplified_attr: list[AstNode | object] = [self.simplify(child) for child in node]
         simplified_child: list[AstNode] = [child for child in simplified_attr if isinstance(child, AstNode)]
         # 其实我想用filter的, 但是filter无法收窄类型检查, 刚好列表推导式看着也更好懂。
         if (
-            all(isinstance(child, NumberNode) for child in simplified_child)  # all([]) == True
+            all(child.family == ast.Family.ALL for child in simplified_child)  # all([]) == True
             and self.same_family(node, node.children)  # no child时显然也算同一族, 毕竟底层是father & child for loop
         ):
             return self.fold(node, simplified_child)

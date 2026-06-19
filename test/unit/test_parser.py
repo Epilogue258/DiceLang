@@ -218,7 +218,7 @@ def test_dice_basic():
     assert isinstance(result, DiceNode)
     assert isinstance(result.count, NumberNode) and result.count.value == 1
     assert isinstance(result.sides, NumberNode) and result.sides.value == 6
-    assert result.selectors == []
+    assert result.selectors == ()
 
 
 def test_dice_in_expression():
