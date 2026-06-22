@@ -1,4 +1,3 @@
-from itertools import count
 from typing import Self, cast  # cast可以用于收紧类型
 
 from .astnode import (
@@ -163,16 +162,14 @@ class Parser:
             consume_count, names, op = info
             if op != TokenType.ASSIGN:
                 raise ParserError("宏定义仅支持 = 赋值", token=self.current)
-            for _ in range(consume_count):
-                self.consume()
+            self.pos += consume_count
             return MacroDefStmt(names=names, expr=self.parse_expr())
 
         # VarDef: IDENTIFIER (, IDENTIFIER)* OP expr
         info = self._scan_def_names()
         if info is not None:
             consume_count, names, op = info
-            for _ in range(consume_count):
-                self.consume()
+            self.pos += consume_count
             return VarDefStmt(names=names, expr=self.parse_expr(), op=op)
 
         # 默认：表达式语句

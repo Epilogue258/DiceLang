@@ -7,9 +7,7 @@
 
 import random
 
-import pytest
-
-from dicelang.error import DiceLangError, TodoError
+from dicelang.error import DiceLangError
 from dicelang.evaluator import Evaluator
 from dicelang.lexer import Lexer
 from dicelang.parser import Parser

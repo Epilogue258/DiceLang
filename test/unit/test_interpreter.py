@@ -8,11 +8,9 @@ VarDef / MacroDef 预留空接口，待实现后填入。
 
 import random
 
-import pytest
-
-from dicelang.error import DiceLangError, TodoError
+from dicelang.error import DiceLangError
 from dicelang.interpreter import Interpreter
-from dicelang.result import ErrorRes, ExprRes, MacroDefRes, Result, VarDefRes, VarInfo
+from dicelang.result import ErrorRes, ExprRes, MacroDefRes, Result, VarDefRes
 
 RNG = random.Random(42)
 

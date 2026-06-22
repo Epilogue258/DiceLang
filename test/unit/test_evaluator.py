@@ -155,10 +155,11 @@ def test_unary_plus_number():
 def test_fuzzing_eval():
     """随机表达式求值不崩溃，结果可迭代。"""
     import random as _random
+
     from dicelang.error import DiceLangError
+    from dicelang.evaluator import Evaluator
     from dicelang.lexer import Lexer
     from dicelang.parser import Parser
-    from dicelang.evaluator import Evaluator
 
     def _expr(rng, d=0):
         if d > 6:

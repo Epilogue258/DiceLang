@@ -8,7 +8,6 @@ from dicelang.astnode import (
     DiceNode,
     GroupNode,
     HighestMod,
-    KeepMod,
     LowestMod,
     MapMod,
     NumberNode,
@@ -407,6 +406,7 @@ def test_vardef_parsing(source, names, expected):
 def test_fuzzing_parse():
     """随机表达式解析不崩溃，总是返回 Statement。"""
     import random as _random
+
     from dicelang.error import DiceLangError
     from dicelang.lexer import Lexer
     from dicelang.parser import Parser

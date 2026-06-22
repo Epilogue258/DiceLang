@@ -164,7 +164,7 @@ class CountMod(ModifierNode):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ExplodeMod(ModifierNode):
-    """! / e：爆炸骰，满值追加新 Roll。"""
+    """! / e：爆炸骰，满足条件时追加新 Roll（默认满值）。"""
 
     count: AstNode | None
     condition: TokenType | None
@@ -176,7 +176,7 @@ class ExplodeMod(ModifierNode):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RerollMod(ModifierNode):
-    """re / reroll cond N：将满足条件的骰子重掷一次。"""
+    """re / reroll：将满足条件的骰子重掷。"""
 
     count: AstNode | None
     condition: TokenType | None
@@ -328,6 +328,8 @@ class GroupNode(AstNode):
 
     @staticmethod
     def reconstruct(node: AstNode, attrs: list) -> GroupNode:
+        # __iter__ 重载为 selectors → group，与 fields() 的 group → selectors 顺序不同
+        # 这里 attrs 仅含 group 元素，selectors/pos/length 从原 node 保留
         node = cast(GroupNode, node)
         return GroupNode(group=attrs, selectors=node.selectors, pos=node.pos, length=node.length)
 

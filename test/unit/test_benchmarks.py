@@ -1,8 +1,6 @@
 import pytest
 
 from dicelang.evaluator import Evaluator
-from dicelang.lexer import Lexer
-from dicelang.parser import Parser
 
 # TODO benchmark
 
