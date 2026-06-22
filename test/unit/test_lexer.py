@@ -3,12 +3,12 @@ from typing import Any
 
 import pytest
 
-from DiceLang.error import DiceLangError, LexerError
-from DiceLang.lexer import Lexer
-from DiceLang.tokens import (
+from dicelang.error import DiceLangError, LexerError
+from dicelang.lexer import Lexer
+from dicelang.tokens import (
     Token,
 )
-from DiceLang.tokens import (
+from dicelang.tokens import (
     TokenType as tktype,
 )
 

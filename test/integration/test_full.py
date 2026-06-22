@@ -7,11 +7,11 @@ import random
 
 import pytest
 
-from DiceLang.error import DiceLangError, TodoError
-from DiceLang.evaluator import Evaluator
-from DiceLang.lexer import Lexer
-from DiceLang.parser import Parser
-from DiceLang.result import ErrorRes, ExprRes
+from dicelang.error import DiceLangError, TodoError
+from dicelang.evaluator import Evaluator
+from dicelang.lexer import Lexer
+from dicelang.parser import Parser
+from dicelang.result import ErrorRes, ExprRes
 
 RNG = random.Random(42)  # 固定随机种子, 以便复现
 
@@ -354,10 +354,10 @@ def test_error_invalid_input(source):
 def test_fuzzing_full():
     """随机生成合法表达式，全链路（Lexer→Parser→Evaluator）不崩溃。"""
     import random as _random
-    from DiceLang.error import DiceLangError
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
-    from DiceLang.evaluator import Evaluator
+    from dicelang.error import DiceLangError
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
+    from dicelang.evaluator import Evaluator
 
     def _expr(rng, d=0):
         if d > 8:

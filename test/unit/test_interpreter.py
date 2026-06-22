@@ -10,9 +10,9 @@ import random
 
 import pytest
 
-from DiceLang.error import DiceLangError, TodoError
-from DiceLang.interpreter import Interpreter
-from DiceLang.result import ErrorRes, ExprRes, MacroDefRes, Result, VarDefRes, VarInfo
+from dicelang.error import DiceLangError, TodoError
+from dicelang.interpreter import Interpreter
+from dicelang.result import ErrorRes, ExprRes, MacroDefRes, Result, VarDefRes, VarInfo
 
 RNG = random.Random(42)
 

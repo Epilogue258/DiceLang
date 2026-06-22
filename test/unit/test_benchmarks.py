@@ -1,8 +1,8 @@
 import pytest
 
-from DiceLang.evaluator import Evaluator
-from DiceLang.lexer import Lexer
-from DiceLang.parser import Parser
+from dicelang.evaluator import Evaluator
+from dicelang.lexer import Lexer
+from dicelang.parser import Parser
 
 # TODO benchmark
 

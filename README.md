@@ -3,7 +3,7 @@
 DiceLang 是一款面向桌面 RPG（跑团）场景的骰子表达式领域特定语言（DSL）。它将骰子投掷、算术运算、条件筛选、变量与宏定义整合为一致的文本表达式，并提供逐步化简的求值过程。
 
 ```python
-from DiceLang import Interpreter
+from dicelang import Interpreter
 
 interp = Interpreter()
 results = list(interp("4d6h2 + 1d8 if>5 : 10"))
@@ -27,7 +27,7 @@ uv sync
 ## 快速开始
 
 ```python
-from DiceLang import Interpreter
+from dicelang import Interpreter
 
 interp = Interpreter()
 

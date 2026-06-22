@@ -9,11 +9,11 @@ import random
 
 import pytest
 
-from DiceLang.error import DiceLangError, TodoError
-from DiceLang.evaluator import Evaluator
-from DiceLang.lexer import Lexer
-from DiceLang.parser import Parser
-from DiceLang.result import ErrorRes, ExprRes
+from dicelang.error import DiceLangError, TodoError
+from dicelang.evaluator import Evaluator
+from dicelang.lexer import Lexer
+from dicelang.parser import Parser
+from dicelang.result import ErrorRes, ExprRes
 
 
 # --- 辅助函数 ---

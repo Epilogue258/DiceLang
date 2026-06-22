@@ -2,12 +2,12 @@ import random
 
 import pytest
 
-from DiceLang.astnode import AstNode, BinaryOpNode, FuncCallNode, GroupNode, NumberNode, UnaryOpNode, VarNode
-from DiceLang.error import DiceLangError, TodoError
-from DiceLang.evaluator import Evaluator
-from DiceLang.result import ErrorRes, ExprRes, VarDefRes, VarInfo
-from DiceLang.statement import ExprStmt, VarDefStmt
-from DiceLang.tokens import TokenType as tktype
+from dicelang.astnode import AstNode, BinaryOpNode, FuncCallNode, GroupNode, NumberNode, UnaryOpNode, VarNode
+from dicelang.error import DiceLangError, TodoError
+from dicelang.evaluator import Evaluator
+from dicelang.result import ErrorRes, ExprRes, VarDefRes, VarInfo
+from dicelang.statement import ExprStmt, VarDefStmt
+from dicelang.tokens import TokenType as tktype
 
 RNG = random.Random(42)  # 固定随机种子, 以便复现
 
@@ -94,8 +94,8 @@ def test_arithmetic_complex():
 def test_arithmetic_exprs(expr: str, expected: int):
     """手写 AST 测试各种算术表达式"""
     # 这些用例虽然手写 AST 不方便，但表达式足够简单
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
 
     stmt = Parser(Lexer.tokenize(expr)).parse()
     if isinstance(stmt, ExprStmt):
@@ -155,10 +155,10 @@ def test_unary_plus_number():
 def test_fuzzing_eval():
     """随机表达式求值不崩溃，结果可迭代。"""
     import random as _random
-    from DiceLang.error import DiceLangError
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
-    from DiceLang.evaluator import Evaluator
+    from dicelang.error import DiceLangError
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
+    from dicelang.evaluator import Evaluator
 
     def _expr(rng, d=0):
         if d > 6:
@@ -325,8 +325,8 @@ def test_func_min_basic():
 
 def test_func_max_with_arithmetic():
     """max(2+3, 3*4) → max(5, 12) → 12"""
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
 
     stmt = Parser(Lexer.tokenize("max(2+3, 3*4)")).parse()
     result = eval_final(stmt.value)
@@ -337,8 +337,8 @@ def test_func_max_with_arithmetic():
 
 def test_func_nested():
     """max(max(1,2), min(5,3)) → max(2, 3) → 3"""
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
 
     stmt = Parser(Lexer.tokenize("max(max(1,2), min(5,3))")).parse()
     result = eval_final(stmt.value)
@@ -349,8 +349,8 @@ def test_func_nested():
 
 def test_func_max_with_dice():
     """max(2d6, 3d6) → max([6,1], [6,3,1]) → max(7, 10) → 10"""
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
 
     stmt = Parser(Lexer.tokenize("max(2d6, 3d6)")).parse()
     result = eval_final(stmt.value)
@@ -362,9 +362,9 @@ def test_func_max_with_dice():
 @pytest.mark.xfail(reason="lexer 将 dmax 视为单 token，未拆分为 DICE + IDENTIFIER", strict=True)
 def test_func_dice_with_func_sides():
     """1dmax(4,6) → 词法粘连，xfail"""
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
-    from DiceLang.statement import ErrorStmt
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
+    from dicelang.statement import ErrorStmt
 
     stmt = Parser(Lexer.tokenize("1dmax(4,6)")).parse()
     if isinstance(stmt, ErrorStmt):
@@ -374,9 +374,9 @@ def test_func_dice_with_func_sides():
 @pytest.mark.xfail(reason="lexer 将 dmin 视为单 token，未拆分为 DICE + IDENTIFIER", strict=True)
 def test_func_dice_with_func_count_and_sides_nospace():
     """max(2,3)dmin(4,6) → 词法粘连，xfail"""
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
-    from DiceLang.statement import ErrorStmt
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
+    from dicelang.statement import ErrorStmt
 
     stmt = Parser(Lexer.tokenize("max(2,3)dmin(4,6)")).parse()
     if isinstance(stmt, ErrorStmt):
@@ -390,8 +390,8 @@ def test_func_dice_with_func_count_and_sides_nospace():
 
 def test_func_dice_with_func_sides_spaced():
     """1 d max(4,6) → 1d6 → 6"""
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
 
     stmt = Parser(Lexer.tokenize("1 d max(4,6)")).parse()
     result = eval_final(stmt.value)
@@ -402,8 +402,8 @@ def test_func_dice_with_func_sides_spaced():
 
 def test_func_dice_with_func_count_and_sides_spaced():
     """max(2,3) d min(4,6) → 3d4 → 5"""
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
 
     stmt = Parser(Lexer.tokenize("max(2,3) d min(4,6)")).parse()
     result = eval_final(stmt.value)
@@ -414,8 +414,8 @@ def test_func_dice_with_func_count_and_sides_spaced():
 
 def test_func_dice_with_func_parens():
     """(max(4,6))d(min(2,3)) → 6d3 → 7（)d( 自然断开粘连）"""
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
 
     stmt = Parser(Lexer.tokenize("(max(4,6))d(min(2,3))")).parse()
     result = eval_final(stmt.value)
@@ -426,8 +426,8 @@ def test_func_dice_with_func_parens():
 
 def test_func_dice_with_func_parens_spaced():
     """(max(4,6)) d (min(2,3)) → 6d3 → 7"""
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
 
     stmt = Parser(Lexer.tokenize("(max(4,6)) d (min(2,3))")).parse()
     result = eval_final(stmt.value)
@@ -438,8 +438,8 @@ def test_func_dice_with_func_parens_spaced():
 
 def test_func_dice_with_func_swapped_spaced():
     """max(4,6) d min(2,3) → 6d3 → 7"""
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
 
     stmt = Parser(Lexer.tokenize("max(4,6) d min(2,3)")).parse()
     result = eval_final(stmt.value)

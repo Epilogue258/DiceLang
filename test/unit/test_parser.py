@@ -1,6 +1,6 @@
 import pytest
 
-from DiceLang.astnode import (
+from dicelang.astnode import (
     AstNode,
     BinaryOpNode,
     ConditionMod,
@@ -15,11 +15,11 @@ from DiceLang.astnode import (
     ThrowMod,
     UnaryOpNode,
 )
-from DiceLang.error import DiceLangError, ParserError, TodoError
-from DiceLang.lexer import Lexer
-from DiceLang.parser import Parser
-from DiceLang.statement import ErrorStmt, ExprStmt, Statement, VarDefStmt
-from DiceLang.tokens import Token, TokenType
+from dicelang.error import DiceLangError, ParserError, TodoError
+from dicelang.lexer import Lexer
+from dicelang.parser import Parser
+from dicelang.statement import ErrorStmt, ExprStmt, Statement, VarDefStmt
+from dicelang.tokens import Token, TokenType
 
 
 # --- 辅助函数 ---
@@ -407,9 +407,9 @@ def test_vardef_parsing(source, names, expected):
 def test_fuzzing_parse():
     """随机表达式解析不崩溃，总是返回 Statement。"""
     import random as _random
-    from DiceLang.error import DiceLangError
-    from DiceLang.lexer import Lexer
-    from DiceLang.parser import Parser
+    from dicelang.error import DiceLangError
+    from dicelang.lexer import Lexer
+    from dicelang.parser import Parser
 
     def _expr(rng, d=0):
         if d > 6:

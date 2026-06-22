@@ -4,8 +4,8 @@ import time
 
 sys.path.insert(0, "src")
 
-from DiceLang.interpreter import Interpreter
-from DiceLang.result import ErrorRes, ExprRes, MacroDefRes, VarDefRes
+from dicelang.interpreter import Interpreter
+from dicelang.result import ErrorRes, ExprRes, MacroDefRes, VarDefRes
 
 RNG = random.Random(42)
 
