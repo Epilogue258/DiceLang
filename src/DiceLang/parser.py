@@ -1,3 +1,4 @@
+from itertools import count
 from typing import Self, cast  # cast可以用于收紧类型
 
 from .astnode import (
@@ -6,6 +7,7 @@ from .astnode import (
     ConditionMod,
     CountMod,
     DiceNode,
+    ExplodeMod,
     FuncCallNode,
     GroupNode,
     HighestMod,
@@ -15,6 +17,7 @@ from .astnode import (
     MapMod,
     ModifierNode,
     NumberNode,
+    RerollMod,
     ThrowMod,
     UnaryOpNode,
     VarNode,
@@ -60,6 +63,7 @@ _KEYWORDS = frozenset(
         TokenType.COUNT,
         TokenType.DICE,
         TokenType.EXPLODE,
+        TokenType.REROLL,
     }
 )
 
@@ -334,6 +338,28 @@ class Parser:
                 case TokenType.COLON:
                     op = self.consume()
                     selectors.append(MapMod(map_to=self.parse_expr(self.BP_MAX), pos=op.pos, length=len(op.text)))
+                case TokenType.EXPLODE:
+                    op = self.consume()
+                    count = self.prefix_parse(self.consume()) if self.match(TokenType.NUMBER, TokenType.LPAREN) else None
+                    condition, threshold = None, None
+                    if self.match(*_COND_TOKENS):
+                        condition = self.consume().type
+                        if self.match(TokenType.NUMBER, TokenType.LPAREN):
+                            threshold = self.prefix_parse(self.consume())
+                        else:
+                            raise ParserError(f"爆炸骰条件后应为数字或表达式，得到 {self.current.text}", token=self.current)
+                    selectors.append(ExplodeMod(count=count, condition=condition, threshold=threshold, pos=op.pos, length=len(op.text)))
+                case TokenType.REROLL:
+                    op = self.consume()
+                    count = self.prefix_parse(self.consume()) if self.match(TokenType.NUMBER, TokenType.LPAREN) else None
+                    condition, threshold = None, None
+                    if self.match(*_COND_TOKENS):
+                        condition = self.consume().type
+                        if self.match(TokenType.NUMBER, TokenType.LPAREN):
+                            threshold = self.prefix_parse(self.consume())
+                        else:
+                            raise ParserError(f"重掷条件后应为数字或表达式，得到 {self.current.text}", token=self.current)
+                    selectors.append(RerollMod(count=count, condition=condition, threshold=threshold, pos=op.pos, length=len(op.text)))
                 case _:
                     break
         return selectors
@@ -363,6 +389,8 @@ infix_parselets: dict[TokenType, tuple[int, int]] = {
     TokenType.IFCOUNT: (60, 61),
     TokenType.COUNT: (60, 61),
     TokenType.COLON: (60, 61),
+    TokenType.EXPLODE: (60, 61),
+    TokenType.REROLL: (60, 61),
     TokenType.DICE: (70, 71),  # 骰子 bp 高于选择器，阻止选择器被骰子面数误吞
     TokenType.RPAREN: (0, 0),
     TokenType.COMMA: (0, 0),

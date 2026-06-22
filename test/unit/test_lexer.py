@@ -71,7 +71,7 @@ def _log(source: str, result: list[Token] | DiceLangError) -> None:
         (
             "reroll(6**2)",
             [
-                (tktype.IDENTIFIER, "reroll"),
+                (tktype.REROLL, "reroll"),
                 (tktype.LPAREN, "("),
                 (tktype.NUMBER, 6),
                 (tktype.POW, "^"),
@@ -123,7 +123,7 @@ def _log(source: str, result: list[Token] | DiceLangError) -> None:
                 (tktype.NUMBER, 2),
             ],
         ),
-        ("REROLL", [(tktype.IDENTIFIER, "reroll")]),
+        ("REROLL", [(tktype.REROLL, "reroll")]),
         ("1D6!", [(tktype.NUMBER, 1), (tktype.DICE, "d"), (tktype.NUMBER, 6), (tktype.EXPLODE, "!")]),
         (
             "1D6 if == 1 : 2",

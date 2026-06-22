@@ -162,6 +162,30 @@ class CountMod(ModifierNode):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class ExplodeMod(ModifierNode):
+    """! / e：爆炸骰，满值追加新 Roll。"""
+
+    count: AstNode | None
+    condition: TokenType | None
+    threshold: AstNode | None
+
+    def __str__(self) -> str:
+        return "!"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RerollMod(ModifierNode):
+    """re / reroll cond N：将满足条件的骰子重掷一次。"""
+
+    count: AstNode | None
+    condition: TokenType | None
+    threshold: AstNode | None
+
+    def __str__(self) -> str:
+        return f"re{self.count or ''}{self.condition or ''}{self.threshold or ''}"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class MapMod(ModifierNode):
     """:N 将当前所有被标记元素的值替换为 N，并清除标记。"""
 
@@ -179,6 +203,12 @@ class DiceNode(AstNode):
 
     @property
     def family(self) -> Family:
+        for c in self.children:
+            if isinstance(c, NumberNode):
+                continue
+            if isinstance(c, DiceResNode) and not c.selectors:
+                continue
+            return Family.NONE
         return Family.DICE
 
     def __str__(self) -> str:  # TODO 输出时处理selectors
@@ -201,6 +231,13 @@ class DiceResNode(AstNode):
         marked = [r.value for r in self.rolls if r.marked]
         return sum(marked or [r.value for r in self.rolls])
 
+    @property
+    def value(self) -> int:
+        """无选择器时返回值，否则抛异常。"""
+        if self.selectors:
+            raise AttributeError("DiceResNode 仍有未执行的选择器，无法取值")
+        return self.sum()
+
     def __str__(self) -> str:
         def fmt(r: Roll) -> str:
             inner = f"D{r.sides}!{r.value}" if r.exploded else str(r.value)
@@ -208,7 +245,7 @@ class DiceResNode(AstNode):
 
         s = f"[{', '.join(fmt(r) for r in self.rolls)}]"
         if self.selectors:
-            s += ''.join(str(m) for m in self.selectors)
+            s += "".join(str(m) for m in self.selectors)
         return s
 
 

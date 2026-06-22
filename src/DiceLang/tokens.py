@@ -36,16 +36,17 @@ class TokenType(StrEnum):
     RPAREN = ")"
     SEMICOLON = ";"
     # 比较运算
-    LT = "LT"  # <, 3d6 < (5 < 6)
-    GT = "GT"  # >, 3d6 > (5 > 6)
-    EQ = "EQ"  # ==, 3d6 == 5
-    LTE = "LTE"  # <=, 3d6 <= (5 <= 6)
-    GTE = "GTE"  # >=, 3d6 >= (5 >= 6)
-    NEQ = "NEQ"  # !=, 3d6 != (5 != 6)
+    LT = "<"  # <, 3d6 < (5 < 6)
+    GT = ">"  # >, 3d6 > (5 > 6)
+    EQ = "=="  # ==, 3d6 == 5
+    LTE = "<="  # <=, 3d6 <= (5 <= 6)
+    GTE = ">="  # >=, 3d6 >= (5 >= 6)
+    NEQ = "!="  # !=, 3d6 != (5 != 6)
     # 后缀筛选, 这类运算符区分选择与删除, 是为了便于嵌套处理, 如h3kl1意为在最大的三个中取最小(第三名)
     HIGHEST = "HIGHEST"  # h, e.g. 4d6h3 = 4d6选中最大的三个骰子
     LOWEST = "LOWEST"  # l, e.g. 4d6l2 = 4d6选中最小的两个骰子
     KEEP = "KEEP"  # k, e.g. 4d6h3k = 4d6选中最大的三个骰子并保存, 弃置剩余结果, 清除选中
+    REROLL = "REROLL"  # re / reroll，重掷，如：4D6re<3
     THROW = "THROW"  # t, e.g. 4d6h3t = 4d6选中最大的三个骰子并丢弃, 保存选中结果, 清除选中
     EXPLODE = "EXPLODE"  # 爆炸骰，如：1D6!、2D4e
     # 函数调用相关

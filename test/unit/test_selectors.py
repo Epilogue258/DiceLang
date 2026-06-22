@@ -93,14 +93,14 @@ def test_selector_steps_if():
     """4d6 if>4：标记大于4的元素"""
     steps = eval_steps("4d6 if>4")
     _log("4d6 if>4", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]if GT 4", "[(6), (6), 1, 1]", "12"]
+    assert steps == ["4D6", "[6, 6, 1, 1]if > 4", "[(6), (6), 1, 1]", "12"]
 
 
 def test_selector_steps_ifc():
     """4d6 ifc>4：标记 → 计数（跳过中间 [(1),(1)] 步骤）"""
     steps = eval_steps("4d6 ifc>4")
     _log("4d6 ifc>4", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]if GT 4ifc", "[(6), (6), 1, 1]ifc", "2"]
+    assert steps == ["4D6", "[6, 6, 1, 1]if > 4ifc", "[(6), (6), 1, 1]ifc", "2"]
 
 
 def test_selector_steps_count():
@@ -162,29 +162,26 @@ def test_selector_steps_if_eq_mismatch():
 # ============================================================
 
 
-@pytest.mark.xfail(reason="selector 参数含表达式尚未支持", strict=True, raises=AttributeError)
 def test_selector_dynamic_h():
-    """4d6 h(1d6) → 1d6=3 → h3 → 标记最高3 → 13"""
+    """4d6 h(1d6) → 1d6=[3] → h3 → 标记最高3 → [(6),(6),(1),1] → 13"""
     steps = eval_steps("4d6 h(1d6)")
     _log("4d6 h(1d6)", steps)
     # [6,6,1,1] → h3 → [(6),(6),(1),1] → 13
     assert steps[-1] == "13"
 
 
-@pytest.mark.xfail(reason="selector 参数含表达式尚未支持", strict=True, raises=AttributeError)
 def test_selector_dynamic_l():
-    """4d6 l(2d4+3) → 2d4+3=5 → l5 → 全标记 → 14"""
+    """4d6 l(2d4+3) → 2d4+3=[3,2]+3=8 → l8 → 全标记 → 14"""
     steps = eval_steps("4d6 l(2d4+3)")
     _log("4d6 l(2d4+3)", steps)
     assert steps[-1] == "14"
 
 
-@pytest.mark.xfail(reason="selector 参数含表达式尚未支持", strict=True, raises=AttributeError)
 def test_selector_dynamic_if():
-    """4d6 if>(3d6) → 3d6=5 → if>5 → 标记>5 → 12"""
+    """4d6 if>(3d6) → 3d6=7 → if>7 → 无标记 → 14"""
     steps = eval_steps("4d6 if>(3d6)")
     _log("4d6 if>(3d6)", steps)
-    assert steps[-1] == "12"
+    assert steps[-1] == "14"
 
 
 # ============================================================
@@ -222,14 +219,14 @@ def test_mapmod_if():
     """4d6 if>4 : 5 → [6,6,1,1] 标记>4 → [(6),(6),1,1] → :5 → [5,5,1,1] → 12"""
     steps = eval_steps("4d6 if>4 : 5")
     _log("4d6 if>4 : 5", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]if GT 4: 5", "[(6), (6), 1, 1]: 5", "[5, 5, 1, 1]", "12"]
+    assert steps == ["4D6", "[6, 6, 1, 1]if > 4: 5", "[(6), (6), 1, 1]: 5", "[5, 5, 1, 1]", "12"]
 
 
 def test_mapmod_if_eq():
     """4d6 if ==1 : 2 → [6,6,1,1] 标记==1 → [6,6,(1),(1)] → :2 → [6,6,2,2] → 16"""
     steps = eval_steps("4d6 if ==1 : 2")
     _log("4d6 if ==1 : 2", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]if EQ 1: 2", "[6, 6, (1), (1)]: 2", "[6, 6, 2, 2]", "16"]
+    assert steps == ["4D6", "[6, 6, 1, 1]if == 1: 2", "[6, 6, (1), (1)]: 2", "[6, 6, 2, 2]", "16"]
 
 
 def test_mapmod_h():
@@ -243,4 +240,134 @@ def test_mapmod_empty_match():
     """4d6 if>7 : 2 → [6,6,1,1] 无标记 → :2 空操作 → 14"""
     steps = eval_steps("4d6 if>7 : 2")
     _log("4d6 if>7 : 2", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]if GT 7: 2", "[6, 6, 1, 1]: 2", "[6, 6, 1, 1]", "14"]
+    assert steps == ["4D6", "[6, 6, 1, 1]if > 7: 2", "[6, 6, 1, 1]: 2", "[6, 6, 1, 1]", "14"]
+
+
+# ============================================================
+# 爆炸骰 (Explode)
+# ============================================================
+
+
+def test_explode_basic():
+    """4d6e → 满值爆 → 6 爆出 3 和 2 → 19"""
+    steps = eval_steps("4d6e")
+    _log("4d6e", steps)
+    assert steps == ["4D6", "[6, 6, 1, 1]!", "[6, D6!3, 6, D6!2, 1, 1]", "19"]
+
+
+def test_explode_bang():
+    """4d6! ≡ 4d6e"""
+    steps = eval_steps("4d6!")
+    _log("4d6!", steps)
+    assert steps == ["4D6", "[6, 6, 1, 1]!", "[6, D6!3, 6, D6!2, 1, 1]", "19"]
+
+
+def test_explode_with_count():
+    """4d6e3 → per-die 至多 3 次爆"""
+    steps = eval_steps("4d6e3")
+    _log("4d6e3", steps)
+    assert steps == ["4D6", "[6, 6, 1, 1]!", "[6, D6!3, 6, D6!2, 1, 1]", "19"]
+
+
+def test_explode_condition():
+    """4d6e>=5 → >=5 才爆"""
+    steps = eval_steps("4d6e>=5")
+    _log("4d6e>=5", steps)
+    assert steps == ["4D6", "[6, 6, 1, 1]!", "[6, D6!3, 6, D6!2, 1, 1]", "19"]
+
+
+def test_explode_condition_with_count():
+    """4d6e3>=5 → per-die 至多 3 次 >=5 爆"""
+    steps = eval_steps("4d6e3>=5")
+    _log("4d6e3>=5", steps)
+    assert steps == ["4D6", "[6, 6, 1, 1]!", "[6, D6!3, 6, D6!2, 1, 1]", "19"]
+
+
+def test_explode_then_h():
+    """4d6!h2 → 爆完再选最高2个"""
+    steps = eval_steps("4d6!h2")
+    _log("4d6!h2", steps)
+    assert steps == ["4D6", "[6, 6, 1, 1]!h2", "[6, D6!3, 6, D6!2, 1, 1]h2", "[(6), (D6!3), 6, D6!2, 1, 1]", "9"]
+
+
+def test_explode_then_keep():
+    """4d6! k → 爆完无标记 → k 保留空集"""
+    steps = eval_steps("4d6! k")
+    _log("4d6! k", steps)
+    assert steps == ["4D6", "[6, 6, 1, 1]!k", "[6, D6!3, 6, D6!2, 1, 1]k", "[]", "0"]
+
+
+def test_explode_then_count():
+    """4d6! count → 爆完统计总数"""
+    steps = eval_steps("4d6! count")
+    _log("4d6! count", steps)
+    assert steps == ["4D6", "[6, 6, 1, 1]!count", "[6, D6!3, 6, D6!2, 1, 1]count", "6"]
+
+
+# ============================================================
+# 重掷 (Reroll)
+# ============================================================
+
+
+def test_reroll_basic():
+    """4d6re → 无条件重掷一次"""
+    steps = eval_steps("4d6re")
+    _log("4d6re", steps)
+    assert steps == ["4D6", "[6, 6, 1, 1]re", "[3, 2, 2, 2]", "9"]
+
+
+def test_reroll_with_count():
+    """4d6re2 → 每颗至多重掷2次"""
+    steps = eval_steps("4d6re2")
+    _log("4d6re2", steps)
+    assert steps == ["4D6", "[6, 6, 1, 1]re2", "[2, 2, 1, 6]", "11"]
+
+
+def test_reroll_condition():
+    """4d6re<3 → 只重掷 <3 的骰子"""
+    steps = eval_steps("4d6re<3")
+    _log("4d6re<3", steps)
+    assert steps == ["4D6", "[6, 6, 1, 1]re<3", "[6, 6, 3, 6]", "21"]
+
+
+def test_reroll_condition_with_count():
+    """4d6re2<3 → 每颗 <3 的至多重掷2次"""
+    steps = eval_steps("4d6re2<3")
+    _log("4d6re2<3", steps)
+    assert steps == ["4D6", "[6, 6, 1, 1]re2<3", "[6, 6, 3, 2]", "17"]
+
+
+def test_reroll_then_keep():
+    """4d6re>5 k → 只重掷>5的 → k 保留标记(无标记→空集)"""
+    steps = eval_steps("4d6re>5 k")
+    _log("4d6re>5 k", steps)
+    assert steps == ["4D6", "[6, 6, 1, 1]re>5k", "[3, 2, 1, 1]k", "[]", "0"]
+
+
+# ============================================================
+# 复合：爆炸 + 重掷 + 选择器
+# ============================================================
+
+
+def test_explode_reroll_then_h():
+    """4d6! re h2 → 爆 → 重掷 → 选高2"""
+    steps = eval_steps("4d6! re h2")
+    _log("4d6! re h2", steps)
+    assert steps == [
+        "4D6", "[6, 6, 1, 1]!reh2",
+        "[6, D6!3, 6, D6!2, 1, 1]reh2",
+        "[2, D6!2, 6, D6!1, 6, 6]h2",
+        "[(2), (D6!2), 6, D6!1, 6, 6]", "4",
+    ]
+
+
+def test_explode_if_map():
+    """4d6e3 if>4:2 → 爆 → 标记>4 → 映射为2"""
+    steps = eval_steps("4d6e3 if>4:2")
+    _log("4d6e3 if>4:2", steps)
+    assert steps == [
+        "4D6", "[6, 6, 1, 1]!if > 4: 2",
+        "[6, D6!3, 6, D6!2, 1, 1]if > 4: 2",
+        "[(6), D6!3, (6), D6!2, 1, 1]: 2",
+        "[2, D6!3, 2, D6!2, 1, 1]", "11",
+    ]

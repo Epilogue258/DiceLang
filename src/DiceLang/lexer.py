@@ -33,10 +33,10 @@ class Lexer:  # 词法分析器：输入字符串，输出 Token 流。
             elif ch in SYMBOLS:
                 # 注意SYMBOLS和SYMBOL_TO_TYPE的区别, 前者是符号集合, 比如尽管不存在!这个token, 由于其为!=的一部分,in SYMBOLS为真
                 symbol = _consume_while(lambda c: c in SYMBOLS, text, index, max_length=LONGEST_SYMBOL_LENGTH)
-                # 然后, 对于1-(2), 会匹配成-(, 这时就需要回退到-
+                # 然后, 对于1-(2), 会匹配成"-(", 这时就需要回退到"-"
                 while symbol not in SYMBOL_TO_TYPE and symbol not in STANDARD_SYMBOLS and len(symbol) > 1:
-                    symbol = symbol[:-1]  # 对于上述例子, 这里回退后symbol变作-, (会在下次循环捕获, 如此实现最长匹配
-                std_symbol = _standardize_symbol(symbol)
+                    symbol = symbol[:-1]  # 对于上述例子, 这里回退后symbol变作"-", "("会在下次循环捕获, 如此实现最长匹配
+                std_symbol = STANDARD_SYMBOLS.get(symbol, symbol)
                 end_pos = index + len(symbol)
                 tokens.append(Token(SYMBOL_TO_TYPE[std_symbol], std_symbol, symbol, index))
                 index = end_pos
@@ -61,6 +61,8 @@ IDENTIFIER_TO_TYPE: dict[str, TokenType] = {
     "k": TokenType.KEEP,
     "t": TokenType.THROW,
     "e": TokenType.EXPLODE,
+    "re": TokenType.REROLL,
+    "reroll": TokenType.REROLL,
     "count": TokenType.COUNT,
     "if": TokenType.IF,
     "ifc": TokenType.IFCOUNT,
@@ -98,9 +100,7 @@ SYMBOL_TO_TYPE: dict[str, TokenType] = {
     "!": TokenType.EXPLODE,  # 爆炸骰
     ":": TokenType.COLON,
     ",": TokenType.COMMA,
-    "，": TokenType.COMMA,
     ";": TokenType.SEMICOLON,
-    "；": TokenType.SEMICOLON,
 }
 
 STANDARD_SYMBOLS: dict[str, str] = {
@@ -124,9 +124,11 @@ STANDARD_SYMBOLS: dict[str, str] = {
     "！=": "!=",
     "＆": "&",
     "：": ":",
+    "；": ";",
     # 语义标准化
     "**": "^",
     "e": "!",
+    "reroll": "re",
     "**=": "^=",
 }
 
@@ -143,7 +145,3 @@ def _consume_while(predicate: Callable[[str], bool], text: str, pos: int, max_le
         if max_length is not None and len(result) >= max_length:
             break
     return result
-
-
-def _standardize_symbol(symbol: str) -> str:
-    return STANDARD_SYMBOLS.get(symbol, symbol)

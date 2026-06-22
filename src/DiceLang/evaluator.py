@@ -1,7 +1,7 @@
 import dataclasses
 import queue
 import random
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from operator import eq, ge, gt, le, lt, ne
 from typing import Any
 
@@ -22,6 +22,8 @@ _COND_OPS = {
     TokenType.EQ: eq,
     TokenType.NEQ: ne,
 }
+_EXPLODE_LIMIT = 9
+_REROLL_LIMIT = 9
 
 
 class Evaluator:
@@ -104,6 +106,9 @@ class Evaluator:
                 if not node.selectors:
                     return NumberNode(value=node.sum())
                 return self._apply_modifier(node)
+            case ast.ModifierNode():
+                attrs = [self.simplify(attr) for attr in node]
+                return node.reconstruct(node, attrs)
             case _:  # pragma: no cover
                 raise EvaluatorError(f"无法折叠的节点: {node}", ast_tree=node)
 
@@ -126,27 +131,41 @@ class Evaluator:
         new_attrs = [self._distribute_selectors(c, selectors) if isinstance(c, AstNode) else c for c in node]
         return type(node).reconstruct(node, new_attrs)
 
+    def _mod_value(self, child: AstNode) -> int | None:
+        """从 modifier 子节点提取 int 值，非 NumberNode/DiceResNode(no sel) 返回 None。"""
+        if isinstance(child, ast.NumberNode):
+            return child.value
+        if isinstance(child, ast.DiceResNode) and not child.selectors:
+            return child.value
+        return None
+
     def _apply_modifier(self, node: ast.DiceResNode) -> AstNode:
         """对 DiceResNode 施加当前选择器（selectors[0]），返回化简后的节点。"""
-        mod = node.selectors[0]
-        remaining_selectors = node.selectors[1:]
+        # 所有 modifier 各推进一步，子表达式可能简化
+        new_mods = tuple(map(self.simplify, node.selectors))
+        mod = new_mods[0]
+        remaining_selectors = new_mods[1:]
         match mod:
             case ast.HighestMod(count=count_node) | ast.LowestMod(count=count_node):
-                mark_count: int = count_node.value
+                if (v := self._mod_value(count_node)) is None:
+                    return ast.DiceResNode(rolls=node.rolls, selectors=new_mods)
+                mark_count = v
                 reverse = isinstance(mod, ast.LowestMod)
                 source = reversed(node.rolls) if reverse else node.rolls
                 marked = 0
                 result = []
-                for r in source:
-                    if not r.marked and marked < mark_count:
-                        result.append(r._replace(marked=True))
+                for roll in source:
+                    if not roll.marked and marked < mark_count:
+                        result.append(roll._replace(marked=True))
                         marked += 1
                     else:
-                        result.append(r)
+                        result.append(roll)
                 rolls = tuple(reversed(result)) if reverse else tuple(result)
                 return ast.DiceResNode(rolls=rolls, selectors=remaining_selectors)
             case ast.ConditionMod(condition=condition, threshold=threshold_node):
-                threshold: int = threshold_node.value
+                if (v := self._mod_value(threshold_node)) is None:
+                    return ast.DiceResNode(rolls=node.rolls, selectors=new_mods)
+                threshold = v
                 cmp = _COND_OPS[condition]
                 rolls = tuple(r._replace(marked=cmp(r.value, threshold)) if not r.marked else r for r in node.rolls)
                 return ast.DiceResNode(rolls=rolls, selectors=remaining_selectors)
@@ -174,9 +193,73 @@ class Evaluator:
                 marked_count = sum(1 for r in node.rolls if r.marked)
                 return NumberNode(value=marked_count if marked_count else sum(1 for _ in node.rolls))
             case ast.MapMod(map_to=map_to_node):
-                mapped_value: int = map_to_node.value
+                if (v := self._mod_value(map_to_node)) is None:
+                    return ast.DiceResNode(rolls=node.rolls, selectors=new_mods)
+                mapped_value = v
                 new_rolls = tuple(r._replace(value=mapped_value, marked=False) if r.marked else r for r in node.rolls)
                 return ast.DiceResNode(rolls=new_rolls, selectors=remaining_selectors)
+            case ast.ExplodeMod(count=count_node, condition=condition, threshold=threshold_node):
+                if count_node is not None:
+                    if (v := self._mod_value(count_node)) is None:
+                        return ast.DiceResNode(rolls=node.rolls, selectors=new_mods)
+                    max_per_die = min(v, _EXPLODE_LIMIT)
+                else:
+                    max_per_die = _EXPLODE_LIMIT
+                # 爆面判定
+                cmp: Callable | None = _COND_OPS.get(condition)
+                if threshold_node is not None:
+                    if (v := self._mod_value(threshold_node)) is None:
+                        return ast.DiceResNode(rolls=node.rolls, selectors=new_mods)
+                    threshold = v
+                else:
+                    threshold = None
+
+                def should_explode(roll) -> bool:
+                    if cmp is not None:
+                        return cmp(roll.value, threshold)
+                    return eq(roll.value, roll.sides)
+
+                rolls = []
+                for roll in node.rolls:
+                    remaining = max_per_die
+                    rolls.append(roll)
+                    while remaining > 0 and should_explode(roll):
+                        roll = Roll(value=self.rng.randint(1, roll.sides), sides=roll.sides, marked=False, exploded=True)
+                        rolls.append(roll)
+                        remaining -= 1
+
+                return ast.DiceResNode(rolls=tuple(rolls), selectors=remaining_selectors)
+            case ast.RerollMod(count=count_node, condition=condition, threshold=threshold_node):
+                if count_node is not None:
+                    if (v := self._mod_value(count_node)) is None:
+                        return ast.DiceResNode(rolls=node.rolls, selectors=new_mods)
+                    max_per_die = min(v, _EXPLODE_LIMIT)
+                elif condition is None:
+                    max_per_die = 1
+                else:
+                    max_per_die = _EXPLODE_LIMIT
+                cmp: Callable | None = _COND_OPS.get(condition)
+                if threshold_node is not None:
+                    if (v := self._mod_value(threshold_node)) is None:
+                        return ast.DiceResNode(rolls=node.rolls, selectors=new_mods)
+                    threshold = v
+                else:
+                    threshold = None
+
+                def should_reroll(roll) -> bool:
+                    if cmp is not None:
+                        return cmp(roll.value, threshold)
+                    return True
+
+                rolls: list[Roll] = []
+                for roll in node.rolls:
+                    remaining = max_per_die
+                    while remaining > 0 and should_reroll(roll):
+                        roll = roll._replace(value=self.rng.randint(1, roll.sides), marked=False)
+                        remaining -= 1
+                    rolls.append(roll)
+
+                return ast.DiceResNode(rolls=tuple(rolls), selectors=remaining_selectors)
             case _:  # pragma: no cover
                 raise EvaluatorError(f"未处理的选择器类型: {type(mod).__name__}", ast_tree=node)
 
