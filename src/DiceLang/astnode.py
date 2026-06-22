@@ -36,6 +36,7 @@ class Roll(NamedTuple):
     sides: int
     marked: bool = False
     exploded: bool = False
+    reroll_chain: tuple[int, ...] = ()  # 重掷全链，空=未重掷
 
 
 class Family(enum.Flag):  # 底层就是位掩码啦
@@ -240,7 +241,12 @@ class DiceResNode(AstNode):
 
     def __str__(self) -> str:
         def fmt(r: Roll) -> str:
-            inner = f"D{r.sides}!{r.value}" if r.exploded else str(r.value)
+            if r.reroll_chain:
+                inner = "|".join(str(v) for v in r.reroll_chain)
+            elif r.exploded:
+                inner = f"D{r.sides}!{r.value}"
+            else:
+                inner = str(r.value)
             return f"({inner})" if r.marked else inner
 
         s = f"[{', '.join(fmt(r) for r in self.rolls)}]"

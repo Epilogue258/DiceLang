@@ -254,10 +254,12 @@ class Evaluator:
                 rolls: list[Roll] = []
                 for roll in node.rolls:
                     remaining = max_per_die
+                    chain = [roll.value]
                     while remaining > 0 and should_reroll(roll):
                         roll = roll._replace(value=self.rng.randint(1, roll.sides), marked=False)
+                        chain.append(roll.value)
                         remaining -= 1
-                    rolls.append(roll)
+                    rolls.append(roll._replace(reroll_chain=tuple(chain)))
 
                 return ast.DiceResNode(rolls=tuple(rolls), selectors=remaining_selectors)
             case _:  # pragma: no cover

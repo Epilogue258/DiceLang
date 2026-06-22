@@ -313,35 +313,35 @@ def test_reroll_basic():
     """4d6re → 无条件重掷一次"""
     steps = eval_steps("4d6re")
     _log("4d6re", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]re", "[3, 2, 2, 2]", "9"]
+    assert steps == ["4D6", "[6, 6, 1, 1]re", "[6|3, 6|2, 1|2, 1|2]", "9"]
 
 
 def test_reroll_with_count():
     """4d6re2 → 每颗至多重掷2次"""
     steps = eval_steps("4d6re2")
     _log("4d6re2", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]re2", "[2, 2, 1, 6]", "11"]
+    assert steps == ["4D6", "[6, 6, 1, 1]re2", "[6|3|2, 6|2|2, 1|6|1, 1|6|6]", "11"]
 
 
 def test_reroll_condition():
     """4d6re<3 → 只重掷 <3 的骰子"""
     steps = eval_steps("4d6re<3")
     _log("4d6re<3", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]re<3", "[6, 6, 3, 6]", "21"]
+    assert steps == ["4D6", "[6, 6, 1, 1]re<3", "[6, 6, 1|3, 1|2|2|2|6]", "21"]
 
 
 def test_reroll_condition_with_count():
     """4d6re2<3 → 每颗 <3 的至多重掷2次"""
     steps = eval_steps("4d6re2<3")
     _log("4d6re2<3", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]re2<3", "[6, 6, 3, 2]", "17"]
+    assert steps == ["4D6", "[6, 6, 1, 1]re2<3", "[6, 6, 1|3, 1|2|2]", "17"]
 
 
 def test_reroll_then_keep():
     """4d6re>5 k → 只重掷>5的 → k 保留标记(无标记→空集)"""
     steps = eval_steps("4d6re>5 k")
     _log("4d6re>5 k", steps)
-    assert steps == ["4D6", "[6, 6, 1, 1]re>5k", "[3, 2, 1, 1]k", "[]", "0"]
+    assert steps == ["4D6", "[6, 6, 1, 1]re>5k", "[6|3, 6|2, 1, 1]k", "[]", "0"]
 
 
 # ============================================================
@@ -356,8 +356,7 @@ def test_explode_reroll_then_h():
     assert steps == [
         "4D6", "[6, 6, 1, 1]!reh2",
         "[6, D6!3, 6, D6!2, 1, 1]reh2",
-        "[2, D6!2, 6, D6!1, 6, 6]h2",
-        "[(2), (D6!2), 6, D6!1, 6, 6]", "4",
+        "[6|2, 3|2, 6|6, 2|1, 1|6, 1|6]h2", "[(6|2), (3|2), 6|6, 2|1, 1|6, 1|6]", "4",
     ]
 
 
