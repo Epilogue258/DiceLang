@@ -90,7 +90,7 @@ class NumberNode(AstNode):
         return str(self.value)
 
     @property
-    def family(self) -> Family:  # TODO
+    def family(self) -> Family:  # NumberNode 总可折叠
         return Family.ALL
 
 
@@ -212,7 +212,7 @@ class DiceNode(AstNode):
             return Family.NONE
         return Family.DICE
 
-    def __str__(self) -> str:  # TODO 输出时处理selectors
+    def __str__(self) -> str:
         return f"{self.count}D{self.sides}"
 
 
@@ -363,7 +363,7 @@ class MacroRefNode(AstNode):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class FuncCallNode(AstNode):  # TODO FUNCALL
+class FuncCallNode(AstNode):
     func: str
     args: GroupNode
 

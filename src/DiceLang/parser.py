@@ -21,7 +21,7 @@ from .astnode import (
     ThrowMod,
     UnaryOpNode,
     VarNode,
-)  # TODO 确保应导尽导
+)  # 确保应导尽导
 from .error import ParserError
 from .statement import ErrorStmt, ExprStmt, MacroDefStmt, Statement, VarDefStmt
 from .tokens import Token, TokenType
@@ -235,7 +235,7 @@ class Parser:
                 )
             case TokenType.RPAREN:
                 raise ParserError("多余了右括号。", token=op_token)
-            case _:  # TODO：日后可以添加用户自定义字典
+            case _:
                 raise ParserError(
                     f"不支持的中缀操作: {op_token.type}, 位于{op_token.pos}, 内容: {op_token.text}",
                     token=op_token,
@@ -397,7 +397,7 @@ infix_parselets: dict[TokenType, tuple[int, int]] = {
     TokenType.EOF: (-1, -1),
 }
 
-if __name__ == "__main__":  # pragma: no cover  # TODO 测试用
+if __name__ == "__main__":  # pragma: no cover
     from .lexer import Lexer
 
     sounce = "1+2*2**5d6-4*(3+5)"

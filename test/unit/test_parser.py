@@ -341,21 +341,6 @@ def test_paren_expr_no_selector():
 # ============================================================
 
 
-@pytest.mark.xfail(reason="待实现", strict=True, raises=TodoError)
-@pytest.mark.parametrize(
-    "source",
-    [
-        "x = 3d6",
-    ],
-)
-def test_unimplemented_features(source):
-    result = parse_or_error(source)
-    _log(source, result)
-    if isinstance(result, TodoError):
-        raise result
-    else:
-        raise AssertionError(f"期望 TodoError, 得到 {type(result).__name__}: {result}")
-
 
 # ============================================================
 # VarDef 解析
@@ -419,9 +404,42 @@ def test_vardef_parsing(source, names, expected):
 # ============================================================
 
 
-@pytest.mark.xfail(reason="待实现", strict=True, raises=TodoError)
 def test_fuzzing_parse():
-    raise TodoError("test_fuzzing_parse")
+    """随机表达式解析不崩溃，总是返回 Statement。"""
+    import random as _random
+    from DiceLang.error import DiceLangError
+    from DiceLang.lexer import Lexer
+    from DiceLang.parser import Parser
+
+    def _expr(rng, d=0):
+        if d > 6:
+            return str(rng.randint(1, 100))
+        kinds = [
+            lambda: str(rng.randint(1, 100)),
+            lambda: f"{rng.randint(1, 6)}d{rng.randint(2, 12)}",
+            lambda: f"({_expr(rng, d + 1)})",
+        ]
+        if d > 0:
+            kinds.extend([
+                lambda: f"{_expr(rng, d + 1)} + {_expr(rng, d + 1)}",
+                lambda: f"{_expr(rng, d + 1)} * {_expr(rng, d + 1)}",
+            ])
+        return rng.choice(kinds)()
+
+    rng = _random.Random(42)
+    ok = 0
+    for _ in range(50):
+        expr = _expr(rng)
+        try:
+            tokens = Lexer.tokenize(expr)
+            stmt = Parser(tokens).parse()
+            assert stmt is not None
+            ok += 1
+        except DiceLangError:
+            ok += 1
+        except Exception as e:
+            pytest.fail(f"未预期的异常 [{expr}]: {type(e).__name__}: {e}")
+    assert ok == 50
 
 
 # ============================================================

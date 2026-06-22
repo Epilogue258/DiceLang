@@ -351,6 +351,50 @@ def test_error_invalid_input(source):
 # ============================================================
 
 
-@pytest.mark.xfail(reason="待实现", strict=True, raises=DiceLangError)
 def test_fuzzing_full():
-    raise TodoError("test_fuzzing_full")
+    """随机生成合法表达式，全链路（Lexer→Parser→Evaluator）不崩溃。"""
+    import random as _random
+    from DiceLang.error import DiceLangError
+    from DiceLang.lexer import Lexer
+    from DiceLang.parser import Parser
+    from DiceLang.evaluator import Evaluator
+
+    def _expr(rng, d=0):
+        if d > 8:
+            return str(rng.randint(1, 100))
+        kinds = [
+            lambda: str(rng.randint(1, 100)),
+            lambda: f"{rng.randint(1, 6)}d{rng.randint(2, 20)}",
+            lambda: f"({_expr(rng, d + 1)})",
+            lambda: f"max({_expr(rng, d + 1)}, {_expr(rng, d + 1)})",
+            lambda: f"min({_expr(rng, d + 1)}, {_expr(rng, d + 1)})",
+        ]
+        if d > 0:
+            kinds.extend([
+                lambda: f"{_expr(rng, d + 1)} + {_expr(rng, d + 1)}",
+                lambda: f"{_expr(rng, d + 1)} - {_expr(rng, d + 1)}",
+                lambda: f"{_expr(rng, d + 1)} * {_expr(rng, d + 1)}",
+                lambda: f"{_expr(rng, d + 1)} / {_expr(rng, d + 1)}",
+            ])
+        sel = ["h1", "l1", "k", "t", "if>3", "if<5", "count", "!", "e", "re"]
+        e = rng.choice(kinds)()
+        if rng.random() < 0.2:
+            e += rng.choice(sel)
+        return e
+
+    rng = _random.Random(42)
+    ok = 0
+    for _ in range(100):
+        expr = _expr(rng)
+        try:
+            tokens = Lexer.tokenize(expr)
+            stmt = Parser(tokens).parse()
+            res = Evaluator(rng=_random.Random(rng.randint(0, 2**31 - 1))).eval(stmt)
+            if hasattr(res, "__iter__"):
+                list(res)  # 触发所有步骤生成
+            ok += 1
+        except DiceLangError:
+            ok += 1  # 预期内的错误也算通过
+        except Exception as e:
+            pytest.fail(f"未预期的异常 [{expr}]: {type(e).__name__}: {e}")
+    assert ok == 100

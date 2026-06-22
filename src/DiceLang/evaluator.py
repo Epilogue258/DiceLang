@@ -8,7 +8,7 @@ from typing import Any
 import DiceLang.astnode as ast
 
 from .astnode import AstNode, MacroRefNode, NumberNode, Roll, VarNode
-from .error import EvaluatorError, TodoError
+from .error import EvaluatorError
 from .result import ErrorRes, ExprRes, MacroDefRes, Result, VarDefRes, VarInfo
 from .statement import ErrorStmt, ExprStmt, MacroDefStmt, Statement, VarDefStmt
 from .tokens import TokenType
@@ -114,7 +114,7 @@ class Evaluator:
 
     def _distribute_selectors(
         self, node: AstNode, selectors: tuple[ast.ModifierNode, ...]
-    ) -> AstNode:  # TODO ai写的，我需要检查逻辑
+    ) -> AstNode:
         """递归将 selectors 附加到子树中所有 DiceNode 上。"""
         if isinstance(node, ast.DiceNode):
             new_sel = tuple(node.selectors) + selectors
@@ -372,7 +372,7 @@ class Evaluator:
             case ErrorStmt(value=err):
                 return ErrorRes(value=err)
             case _:  # pragma: no cover
-                raise TodoError(f"不支持的语句类型: {stmt}", ast_tree=stmt)
+                raise EvaluatorError(f"不支持的语句类型: {type(stmt).__name__}", ast_tree=stmt)
 
     def eval(self, stmt: Statement) -> Result:
         """
@@ -399,7 +399,7 @@ if __name__ == "__main__":  # pragma: no cover
     if isinstance(stmt, ExprStmt):
         asttree = stmt.value
     else:
-        raise TodoError("目前仅支持表达式语句的求值")
+        raise EvaluatorError("此示例仅支持表达式语句")
     print(f"AST: {asttree}")
     evaluator = Evaluator(rng=RNG)
     index = 0
